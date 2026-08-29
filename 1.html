@@ -1,0 +1,867 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Study Smart — Medical Microbiology</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,400;0,9..144,600;0,9..144,700;0,9..144,900;1,9..144,500&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0A1F1B;
+    --bg2:#0F2A24;
+    --agar:#F4EEDC;
+    --agar-dim:#E9E0C6;
+    --ink:#132420;
+    --ink-soft:#3C5049;
+    --coral:#E4572E;
+    --teal:#3AAFA9;
+    --gold:#E7B23C;
+    --line: rgba(244,238,220,0.14);
+    --line-strong: rgba(244,238,220,0.28);
+    --shadow: 0 20px 50px rgba(0,0,0,0.35);
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(circle at 12% 8%, rgba(58,175,169,0.10), transparent 40%),
+      radial-gradient(circle at 90% 15%, rgba(231,178,60,0.08), transparent 45%),
+      radial-gradient(circle at 50% 100%, rgba(228,87,46,0.06), transparent 50%),
+      var(--bg);
+    color:var(--agar);
+    font-family:'Inter',sans-serif;
+    min-height:100vh;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--coral); color:var(--agar);}
+
+  /* ---------- background colony texture ---------- */
+  .petri-bg{
+    position:fixed; inset:0; z-index:0; pointer-events:none; opacity:0.5;
+    background-image:
+      radial-gradient(circle 2px at 8% 20%, rgba(244,238,220,0.18) 99%, transparent),
+      radial-gradient(circle 3px at 22% 65%, rgba(244,238,220,0.10) 99%, transparent),
+      radial-gradient(circle 1.5px at 40% 10%, rgba(244,238,220,0.14) 99%, transparent),
+      radial-gradient(circle 2.5px at 60% 80%, rgba(244,238,220,0.10) 99%, transparent),
+      radial-gradient(circle 2px at 78% 35%, rgba(244,238,220,0.14) 99%, transparent),
+      radial-gradient(circle 3px at 92% 70%, rgba(244,238,220,0.08) 99%, transparent),
+      radial-gradient(circle 1.5px at 50% 45%, rgba(244,238,220,0.10) 99%, transparent);
+  }
+
+  .wrap{position:relative; z-index:1; max-width:1180px; margin:0 auto; padding:28px 22px 70px;}
+
+  /* ---------- header ---------- */
+  header{
+    display:flex; align-items:flex-end; justify-content:space-between; gap:18px;
+    padding-bottom:22px; margin-bottom:22px; border-bottom:1px solid var(--line);
+    flex-wrap:wrap;
+  }
+  .brand-eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--teal); margin:0 0 8px;
+  }
+  h1.title{
+    font-family:'Fraunces',serif; font-weight:900; font-style:normal;
+    font-size:clamp(34px,5.5vw,58px); line-height:0.98; margin:0; color:var(--agar);
+    letter-spacing:-0.01em;
+  }
+  h1.title em{ font-style:italic; font-weight:500; color:var(--coral); }
+  .subtitle{
+    font-size:14px; color:var(--agar-dim); opacity:0.75; margin-top:10px; max-width:460px;
+  }
+  .lecture-tag{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; text-align:right; color:var(--agar-dim);
+    line-height:1.7; opacity:0.8; white-space:nowrap;
+  }
+  .lecture-tag strong{ color:var(--gold); display:block; font-size:13px;}
+
+  /* ---------- nav (petri dish tabs) ---------- */
+  nav.tabs{
+    display:flex; gap:12px; flex-wrap:wrap; margin-bottom:30px;
+  }
+  .tab-btn{
+    position:relative;
+    display:flex; align-items:center; gap:10px;
+    padding:11px 20px 11px 16px;
+    background:var(--bg2);
+    border:1px solid var(--line);
+    border-radius:999px;
+    color:var(--agar-dim);
+    font-family:'IBM Plex Mono',monospace;
+    font-size:12.5px; letter-spacing:0.04em;
+    cursor:pointer;
+    transition:all .25s ease;
+  }
+  .tab-btn .dish{
+    width:20px; height:20px; border-radius:50%;
+    border:1.5px solid currentColor;
+    display:flex; align-items:center; justify-content:center;
+    flex-shrink:0;
+  }
+  .tab-btn .dish::after{
+    content:''; width:7px; height:7px; border-radius:50%; background:currentColor; opacity:0.7;
+  }
+  .tab-btn:hover{ border-color:var(--line-strong); color:var(--agar); }
+  .tab-btn.active{
+    background:var(--agar); color:var(--ink); border-color:var(--agar);
+    box-shadow:var(--shadow);
+  }
+  .tab-btn.active .dish{ border-color:var(--coral); color:var(--coral); }
+  .tab-btn .num{ opacity:0.5; }
+
+  /* ---------- panels ---------- */
+  .panel{ display:none; animation:fadeUp .45s ease; }
+  .panel.active{ display:block; }
+  @keyframes fadeUp{ from{opacity:0; transform:translateY(10px);} to{opacity:1; transform:translateY(0);} }
+
+  .section-head{ margin-bottom:22px; }
+  .section-head h2{
+    font-family:'Fraunces',serif; font-weight:700; font-size:clamp(24px,3.4vw,32px);
+    margin:0 0 6px; color:var(--agar);
+  }
+  .section-head p{ margin:0; color:var(--agar-dim); opacity:0.72; font-size:13.5px; max-width:600px; }
+  .section-head .eyebrow{
+    font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.16em; text-transform:uppercase;
+    color:var(--coral); margin-bottom:6px; display:block;
+  }
+
+  /* ===================== 1. OVERVIEW ===================== */
+  .rule-grid{
+    display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:14px;
+  }
+  .rule-card{
+    background:var(--agar); color:var(--ink); border-radius:14px; padding:18px 20px;
+    box-shadow:var(--shadow); border-top:5px solid var(--teal);
+    position:relative; overflow:hidden;
+  }
+  .rule-card.c-coral{ border-top-color:var(--coral); }
+  .rule-card.c-gold{ border-top-color:var(--gold); }
+  .rule-card.c-teal{ border-top-color:var(--teal); }
+  .rule-card h3{
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:0.08em; text-transform:uppercase;
+    margin:0 0 10px; color:var(--ink-soft);
+  }
+  .rule-card ul{ margin:0; padding-left:18px; font-size:13.5px; line-height:1.65; }
+  .rule-card li{ margin-bottom:4px; }
+  .rule-card p{ font-size:13.5px; line-height:1.65; margin:0; }
+  .rule-card .big-term{ font-family:'Fraunces',serif; font-weight:700; font-size:19px; margin-bottom:6px; display:block;}
+
+  .founders-strip{
+    margin-top:16px; background:var(--bg2); border:1px solid var(--line); border-radius:14px; padding:16px 18px;
+  }
+  .founders-strip h3{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--gold); margin:0 0 12px;}
+  .founder-row{ display:grid; grid-template-columns:110px 1fr; gap:4px 14px; font-size:13px; padding:6px 0; border-bottom:1px dashed var(--line); }
+  .founder-row:last-child{ border-bottom:none; }
+  .founder-row .yr{ font-family:'IBM Plex Mono',monospace; color:var(--teal); font-size:12px; }
+  .founder-row .who{ color:var(--agar); font-weight:600; }
+  .founder-row .did{ color:var(--agar-dim); opacity:0.85; grid-column:2; font-size:12.5px; }
+
+  /* ===================== 2. DIAGRAMS ===================== */
+  .diagram-block{
+    background:var(--bg2); border:1px solid var(--line); border-radius:18px; padding:24px;
+    margin-bottom:26px;
+  }
+  .diagram-block h3{
+    font-family:'Fraunces',serif; font-size:20px; margin:0 0 4px; color:var(--agar);
+  }
+  .diagram-block .hint{ font-size:12px; color:var(--agar-dim); opacity:0.6; margin-bottom:18px; font-family:'IBM Plex Mono',monospace;}
+
+  /* chain of infection wheel */
+  .wheel-wrap{ display:flex; gap:28px; flex-wrap:wrap; align-items:center; justify-content:center; }
+  .wheel{ position:relative; width:340px; height:340px; flex-shrink:0; }
+  .wheel-center{
+    position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+    width:118px; height:118px; border-radius:50%; background:var(--agar); color:var(--ink);
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-family:'Fraunces',serif; font-weight:700; font-size:13.5px; line-height:1.2; padding:8px;
+    box-shadow:var(--shadow); z-index:2;
+  }
+  .wheel-node{
+    position:absolute; width:88px; height:88px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; text-align:center;
+    font-size:11.5px; font-weight:600; padding:8px; cursor:pointer; color:var(--ink);
+    border:3px solid var(--bg); transition:transform .2s ease, box-shadow .2s ease; line-height:1.25;
+    font-family:'Inter',sans-serif;
+  }
+  .wheel-node:hover, .wheel-node.active{ transform:scale(1.1); box-shadow:0 0 0 4px rgba(244,238,220,0.15); z-index:3;}
+  .wheel-track{
+    position:absolute; inset:44px; border-radius:50%; border:2px dashed var(--line-strong);
+  }
+  .wheel-detail{
+    flex:1; min-width:240px; background:var(--agar); color:var(--ink); border-radius:14px; padding:20px;
+    min-height:200px; box-shadow:var(--shadow);
+  }
+  .wheel-detail .tag{ font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--coral); margin-bottom:8px; display:block;}
+  .wheel-detail h4{ font-family:'Fraunces',serif; font-size:20px; margin:0 0 10px; }
+  .wheel-detail p{ font-size:13.5px; line-height:1.65; margin:0 0 8px; color:var(--ink-soft); }
+  .wheel-detail ul{ margin:0; padding-left:18px; font-size:13.5px; line-height:1.6; color:var(--ink-soft); }
+
+  /* timeline */
+  .timeline{ position:relative; padding:30px 10px 10px; overflow-x:auto; }
+  .timeline-track{ position:relative; height:4px; background:var(--line-strong); border-radius:4px; margin:0 20px 0; min-width:900px; }
+  .timeline-dots{ position:relative; min-width:900px; }
+  .t-dot{
+    position:absolute; top:-9px; width:22px; height:22px; border-radius:50%; background:var(--teal);
+    border:3px solid var(--bg2); cursor:pointer; transform:translateX(-50%);
+  }
+  .t-dot::after{ content:attr(data-yr); position:absolute; top:26px; left:50%; transform:translateX(-50%);
+    font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--agar-dim); white-space:nowrap; }
+  .t-dot:hover, .t-dot.active{ background:var(--coral); transform:translateX(-50%) scale(1.25); }
+  .t-detail{
+    margin-top:50px; background:var(--agar); color:var(--ink); border-radius:14px; padding:18px 20px;
+    min-height:90px; box-shadow:var(--shadow);
+  }
+  .t-detail .who{ font-family:'Fraunces',serif; font-weight:700; font-size:18px; margin-bottom:6px;}
+  .t-detail .yr{ font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--coral);}
+  .t-detail p{ font-size:13.5px; line-height:1.6; margin:6px 0 0; color:var(--ink-soft);}
+
+  /* classification cards */
+  .class-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:14px; }
+  .class-card{
+    background:var(--agar); color:var(--ink); border-radius:14px; padding:18px; cursor:pointer;
+    min-height:130px; position:relative; box-shadow:var(--shadow); transition:transform .2s ease;
+    display:flex; flex-direction:column; justify-content:space-between;
+  }
+  .class-card:hover{ transform:translateY(-4px); }
+  .class-card .icon{ font-size:26px; margin-bottom:8px; }
+  .class-card h4{ font-family:'Fraunces',serif; font-size:17px; margin:0 0 6px;}
+  .class-card .more{ font-size:12px; color:var(--ink-soft); opacity:0; max-height:0; overflow:hidden; transition:all .25s ease;}
+  .class-card.open .more{ opacity:1; max-height:200px; margin-top:6px;}
+  .class-card .toggle-lbl{ font-family:'IBM Plex Mono',monospace; font-size:10.5px; color:var(--teal); text-transform:uppercase; }
+
+  /* portal table */
+  .portal-table{ width:100%; border-collapse:collapse; font-size:13.5px; }
+  .portal-table thead th{
+    text-align:left; font-family:'IBM Plex Mono',monospace; font-size:11px; letter-spacing:0.08em; text-transform:uppercase;
+    color:var(--gold); padding:8px 10px; border-bottom:1px solid var(--line-strong);
+  }
+  .portal-table tbody tr{ cursor:pointer; border-bottom:1px solid var(--line); transition:background .2s ease;}
+  .portal-table tbody tr:hover{ background:rgba(244,238,220,0.05); }
+  .portal-table td{ padding:10px 10px; color:var(--agar-dim); }
+  .portal-table td.route{ color:var(--agar); font-weight:600; }
+  .portal-example{
+    display:none; background:var(--agar); color:var(--ink); font-size:13px; padding:10px 14px; border-radius:0 0 10px 10px;
+  }
+  .portal-example.show{ display:table-row; }
+  tr.example-row td{ padding:12px 16px; }
+
+  /* ===================== 3. MIND MAP ===================== */
+  .mindmap-wrap{ display:flex; gap:24px; flex-wrap:wrap; align-items:flex-start; }
+  .mindmap-svg-box{ position:relative; flex:1 1 480px; min-width:320px; }
+  .mindmap-panel{
+    flex:1 1 340px; min-width:280px; background:var(--agar); color:var(--ink); border-radius:16px;
+    padding:22px; min-height:380px; box-shadow:var(--shadow); position:sticky; top:20px;
+  }
+  .mindmap-panel .tag{ font-family:'IBM Plex Mono',monospace; font-size:11px; text-transform:uppercase; letter-spacing:0.1em; color:var(--coral); display:block; margin-bottom:8px;}
+  .mindmap-panel h4{ font-family:'Fraunces',serif; font-size:22px; margin:0 0 12px; }
+  .mindmap-panel p, .mindmap-panel li{ font-size:13.5px; line-height:1.7; color:var(--ink-soft); }
+  .mindmap-panel ul{ margin:0; padding-left:18px; }
+  .mindmap-panel .placeholder{ opacity:0.5; font-style:italic; }
+
+  .node-btn{
+    position:absolute; transform:translate(-50%,-50%);
+    background:var(--bg2); border:1.5px solid var(--line-strong); color:var(--agar);
+    font-family:'Inter',sans-serif; font-weight:600; font-size:12px; padding:10px 14px; border-radius:999px;
+    cursor:pointer; white-space:nowrap; transition:all .2s ease; z-index:2;
+  }
+  .node-btn:hover, .node-btn.active{ background:var(--coral); border-color:var(--coral); color:var(--agar); transform:translate(-50%,-50%) scale(1.08); }
+  .node-btn.hub{ background:var(--agar); color:var(--ink); font-family:'Fraunces',serif; font-weight:700; font-size:14px; padding:16px 20px; border-color:var(--gold); }
+  .node-btn.hub:hover{ transform:translate(-50%,-50%); background:var(--agar); color:var(--ink); }
+  #mindmapSvgLines{ position:absolute; inset:0; width:100%; height:100%; z-index:1; }
+  #mindmapSvgLines line{ stroke:var(--line-strong); stroke-width:1.5; }
+
+  /* ===================== 4. FLASHCARDS ===================== */
+  .flash-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
+  .flash-count{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--agar-dim); }
+  .flash-grid{ display:grid; grid-template-columns:repeat(auto-fill,minmax(230px,1fr)); gap:16px; }
+  .flashcard{ perspective:1200px; height:170px; cursor:pointer; }
+  .flashcard-inner{
+    position:relative; width:100%; height:100%; transition:transform .5s cubic-bezier(.4,.2,.2,1); transform-style:preserve-3d;
+  }
+  .flashcard.flipped .flashcard-inner{ transform:rotateY(180deg); }
+  .flash-face{
+    position:absolute; inset:0; border-radius:14px; backface-visibility:hidden;
+    display:flex; align-items:center; justify-content:center; text-align:center; padding:16px;
+    box-shadow:var(--shadow);
+  }
+  .flash-front{ background:var(--teal); color:var(--ink); }
+  .flash-front.v2{ background:var(--gold); }
+  .flash-front.v3{ background:var(--coral); color:var(--agar); }
+  .flash-front span{ font-family:'Fraunces',serif; font-weight:700; font-size:16.5px; line-height:1.25; }
+  .flash-back{ background:var(--agar); color:var(--ink); transform:rotateY(180deg); font-size:12.5px; line-height:1.55; overflow-y:auto; }
+  .flash-back .lbl{ font-family:'IBM Plex Mono',monospace; font-size:9.5px; text-transform:uppercase; letter-spacing:0.1em; color:var(--coral); display:block; margin-bottom:4px;}
+
+  /* ===================== 5. QUIZ ===================== */
+  .quiz-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:20px; flex-wrap:wrap; gap:12px; }
+  .quiz-score{
+    font-family:'IBM Plex Mono',monospace; font-size:13px; background:var(--bg2); border:1px solid var(--line);
+    padding:8px 16px; border-radius:999px; color:var(--gold);
+  }
+  .btn-reset{
+    font-family:'IBM Plex Mono',monospace; font-size:12px; background:transparent; border:1px solid var(--line-strong);
+    color:var(--agar); padding:8px 16px; border-radius:999px; cursor:pointer; transition:all .2s ease;
+  }
+  .btn-reset:hover{ background:var(--coral); border-color:var(--coral); }
+  .quiz-item{
+    background:var(--bg2); border:1px solid var(--line); border-radius:14px; padding:18px 20px; margin-bottom:14px;
+  }
+  .quiz-item .qn{ font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--teal); letter-spacing:0.06em; }
+  .quiz-item .qtext{ font-size:14.5px; margin:6px 0 14px; color:var(--agar); line-height:1.5; }
+  .quiz-options{ display:grid; gap:8px; }
+  .quiz-option{
+    text-align:left; background:var(--bg); border:1px solid var(--line-strong); color:var(--agar-dim);
+    padding:10px 14px; border-radius:10px; cursor:pointer; font-size:13px; font-family:'Inter',sans-serif;
+    transition:all .15s ease;
+  }
+  .quiz-option:hover{ border-color:var(--teal); color:var(--agar); }
+  .quiz-option.correct{ background:rgba(58,175,169,0.18); border-color:var(--teal); color:var(--agar); }
+  .quiz-option.wrong{ background:rgba(228,87,46,0.18); border-color:var(--coral); color:var(--agar); }
+  .quiz-option[disabled]{ cursor:default; }
+
+  /* ---------- footer ---------- */
+  footer{
+    margin-top:50px; padding-top:20px; border-top:1px solid var(--line);
+    display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;
+    font-family:'IBM Plex Mono',monospace; font-size:11.5px; color:var(--agar-dim); opacity:0.65;
+  }
+
+  @media(max-width:640px){
+    .wheel{ width:280px; height:280px; }
+    .wheel-node{ width:74px; height:74px; font-size:10px; }
+    .wheel-center{ width:96px; height:96px; font-size:12px; }
+    .mindmap-panel{ position:static; }
+  }
+</style>
+</head>
+<body>
+<div class="petri-bg"></div>
+<div class="wrap">
+
+  <header>
+    <div>
+      <p class="brand-eyebrow">● Medical Microbiology — Lecture Companion</p>
+      <h1 class="title">Study<em>Smart</em></h1>
+      <p class="subtitle">Every colony of information from Lecture 1 — cultured, plated, and ready to review.</p>
+    </div>
+    <div class="lecture-tag">
+      <strong>Lec. 1 · Level: Second Class</strong>
+      Asst. Prof. Hanan Raheem Hassooni<br>
+      Topic: Intro to Medical Microbiology
+    </div>
+  </header>
+
+  <nav class="tabs" id="tabs">
+    <button class="tab-btn active" data-panel="overview"><span class="dish"></span><span class="num">01</span> Overview</button>
+    <button class="tab-btn" data-panel="diagrams"><span class="dish"></span><span class="num">02</span> Interactive Diagrams</button>
+    <button class="tab-btn" data-panel="mindmap"><span class="dish"></span><span class="num">03</span> Mind Map</button>
+    <button class="tab-btn" data-panel="flashcards"><span class="dish"></span><span class="num">04</span> Flash Cards</button>
+    <button class="tab-btn" data-panel="quiz"><span class="dish"></span><span class="num">05</span> Quiz Bank</button>
+  </nav>
+
+  <!-- ============ 1. OVERVIEW ============ -->
+  <section class="panel active" id="overview">
+    <div class="section-head">
+      <span class="eyebrow">Key laws, not long lectures</span>
+      <h2>Overview</h2>
+      <p>Just the load-bearing facts — the definitions and rules you actually get tested on.</p>
+    </div>
+
+    <div class="rule-grid">
+      <div class="rule-card c-teal">
+        <h3>Microbiology</h3>
+        <p>The study of microorganisms — too small to see with the naked eye. Some are harmful (disease), others are useful (industry, recycling of elements).</p>
+      </div>
+      <div class="rule-card c-coral">
+        <h3>Medical Microbiology</h3>
+        <p>= <strong>Clinical microbiology</strong>. Studies pathogenic microbes that cause infectious disease: transmission, portals of entry, virulence, immune response, diagnosis, treatment, prevention & vaccination.</p>
+      </div>
+      <div class="rule-card c-gold">
+        <h3>4 Classifications of Microorganisms</h3>
+        <ul>
+          <li>Viruses</li>
+          <li>Bacteria</li>
+          <li>Fungi, molds & yeasts</li>
+          <li>Protozoa & helminths</li>
+        </ul>
+      </div>
+      <div class="rule-card c-teal">
+        <h3>Chain of Infection — 6 Links (in order)</h3>
+        <ul>
+          <li>Infectious Agent</li>
+          <li>Reservoir</li>
+          <li>Portal of Exit</li>
+          <li>Mode of Transmission</li>
+          <li>Portal of Entry</li>
+          <li>Susceptible Host</li>
+        </ul>
+      </div>
+      <div class="rule-card c-coral">
+        <h3>Susceptibility Depends On</h3>
+        <ul>
+          <li><strong>A.</strong> Genetic factors (e.g. sickle cell trait ↓ malaria risk)</li>
+          <li><strong>B.</strong> Nonspecific / Innate immunity (skin, mucosa, cilia, cough reflex)</li>
+          <li><strong>C.</strong> Specific immunity (antibodies vs. a specific microbe)</li>
+        </ul>
+      </div>
+      <div class="rule-card c-gold">
+        <h3>Source of Infection</h3>
+        <p><strong>Endogenous:</strong> microbe already in the body (normal flora imbalance) — e.g. E. coli diarrhea.<br>
+        <strong>Exogenous:</strong> from outside — carrier, zoonosis, or soil.</p>
+      </div>
+      <div class="rule-card c-teal">
+        <h3>Reservoir</h3>
+        <p>Habitat where the agent lives, grows & multiplies: humans, animals, or the environment (e.g. C. botulinum → soil).</p>
+      </div>
+      <div class="rule-card c-coral">
+        <h3>Vectors — Know the Difference</h3>
+        <p><strong>Biological:</strong> microbe develops inside the vector (malaria in mosquito).<br>
+        <strong>Mechanical:</strong> vector just carries it (flies → E. coli / Shigella).</p>
+      </div>
+      <div class="rule-card c-gold">
+        <h3>Portals of Entry — Quick List</h3>
+        <ul>
+          <li>Mouth — ingestion</li>
+          <li>Nose — inhalation</li>
+          <li>Mucous membranes — adhesion</li>
+          <li>Contact — direct / indirect</li>
+          <li>Anal · Vaginal · Placental · Blood</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="founders-strip">
+      <h3>Founders of Microbiology — Cheat Sheet</h3>
+      <div class="founder-row"><span class="yr">1660</span><span class="who">Robert Hooke</span><span class="did">Observed microorganisms first; coined the term "cell".</span></div>
+      <div class="founder-row"><span class="yr">1822–95</span><span class="who">Louis Pasteur</span><span class="did">Pasteurization; disproved spontaneous generation; defined Germ Theory.</span></div>
+      <div class="founder-row"><span class="yr">1843–1910</span><span class="who">Robert Koch</span><span class="did">Identified anthrax; developed agar medium; Koch's postulates.</span></div>
+      <div class="founder-row"><span class="yr">1854–1915</span><span class="who">Paul Ehrlich</span><span class="did">Developed chemotherapy; treated sleeping sickness & syphilis.</span></div>
+      <div class="founder-row"><span class="yr">1881–1951</span><span class="who">Alexander Fleming</span><span class="did">Discovered penicillin & lysozyme.</span></div>
+      <div class="founder-row"><span class="yr">1864–1920</span><span class="who">Dmitri Ivanovski</span><span class="did">Discovered the first virus — tobacco mosaic virus (TMV).</span></div>
+      <div class="founder-row"><span class="yr">1952</span><span class="who">Hershey & Chase</span><span class="did">Proved DNA is the genetic material of bacteriophages.</span></div>
+    </div>
+  </section>
+
+  <!-- ============ 2. DIAGRAMS ============ -->
+  <section class="panel" id="diagrams">
+    <div class="section-head">
+      <span class="eyebrow">Click anything</span>
+      <h2>Interactive Diagrams</h2>
+      <p>Every figure from the lecture, rebuilt so you can click into it.</p>
+    </div>
+
+    <!-- Chain of infection wheel -->
+    <div class="diagram-block">
+      <h3>The Chain of Infection</h3>
+      <span class="hint">Tap a node on the ring →</span>
+      <div class="wheel-wrap">
+        <div class="wheel" id="wheel">
+          <div class="wheel-track"></div>
+          <div class="wheel-center">Chain of<br>Infection</div>
+          <!-- nodes injected by JS -->
+        </div>
+        <div class="wheel-detail" id="wheelDetail">
+          <span class="tag">Select a link</span>
+          <h4>Start exploring</h4>
+          <p>Click any circle on the ring to see what that link in the chain means, with the lecture's own examples.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="diagram-block">
+      <h3>History of Microbiology — Timeline</h3>
+      <span class="hint">Tap a dot →</span>
+      <div class="timeline">
+        <div class="timeline-track"></div>
+        <div class="timeline-dots" id="timelineDots"></div>
+        <div class="t-detail" id="timelineDetail">
+          <span class="yr">SELECT A YEAR</span>
+          <div class="who">—</div>
+          <p>Click a point on the timeline above to reveal the scientist's contribution.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- classification -->
+    <div class="diagram-block">
+      <h3>Classification of Microorganisms</h3>
+      <span class="hint">Tap a card to expand →</span>
+      <div class="class-grid" id="classGrid"></div>
+    </div>
+
+    <!-- portal table -->
+    <div class="diagram-block">
+      <h3>Portals of Entry — Interactive Table</h3>
+      <span class="hint">Tap a row for the lecture's example →</span>
+      <table class="portal-table">
+        <thead><tr><th>Route</th><th>Mechanism</th></tr></thead>
+        <tbody id="portalBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ============ 3. MIND MAP ============ -->
+  <section class="panel" id="mindmap">
+    <div class="section-head">
+      <span class="eyebrow">One hub, every branch</span>
+      <h2>Mind Map</h2>
+      <p>Click a topic node — its full text opens in the panel on the right.</p>
+    </div>
+    <div class="mindmap-wrap">
+      <div class="mindmap-svg-box" id="mindmapBox">
+        <svg id="mindmapSvgLines"></svg>
+        <!-- node buttons injected by JS -->
+      </div>
+      <div class="mindmap-panel" id="mindmapPanel">
+        <span class="tag">Nothing selected</span>
+        <h4>Pick a node</h4>
+        <p class="placeholder">Its content will replace this text — right here, in this panel.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 4. FLASHCARDS ============ -->
+  <section class="panel" id="flashcards">
+    <div class="section-head">
+      <span class="eyebrow">Flip to reveal</span>
+      <h2>Flash Cards</h2>
+      <p>Every key term from the lecture, front and back.</p>
+    </div>
+    <div class="flash-toolbar">
+      <span class="flash-count" id="flashCount">0 cards</span>
+    </div>
+    <div class="flash-grid" id="flashGrid"></div>
+  </section>
+
+  <!-- ============ 5. QUIZ ============ -->
+  <section class="panel" id="quiz">
+    <div class="section-head">
+      <span class="eyebrow">Test yourself</span>
+      <h2>Quiz Bank</h2>
+      <p>30+ questions. Answer choices reshuffle every time you load this page.</p>
+    </div>
+    <div class="quiz-toolbar">
+      <span class="quiz-score" id="quizScore">Score: 0 / 0</span>
+      <button class="btn-reset" id="quizReset">↻ Reset Quiz</button>
+    </div>
+    <div id="quizList"></div>
+  </section>
+
+  <footer>
+    <span>© <span id="yr"></span> Anmar Taha — All Rights Reserved</span>
+    <span>Study Smart · Medical Microbiology</span>
+  </footer>
+</div>
+
+<script>
+document.getElementById('yr').textContent = new Date().getFullYear();
+
+/* ---------------- TABS ---------------- */
+const tabs = document.querySelectorAll('.tab-btn');
+const panels = document.querySelectorAll('.panel');
+tabs.forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    tabs.forEach(b=>b.classList.remove('active'));
+    panels.forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.panel).classList.add('active');
+  });
+});
+
+/* ================= 2a. CHAIN OF INFECTION WHEEL ================= */
+const chainLinks = [
+  {name:"Infectious Agent", color:"#E4572E", tag:"Link 1", detail:"The pathogen (germ) causing disease.", list:["Bacteria","Fungi","Parasites","Prions"]},
+  {name:"Reservoir", color:"#E7B23C", tag:"Link 2", detail:"Habitat where the agent lives, grows & multiplies before transfer to a host.", list:["People","Water","Food","Animals & environment"]},
+  {name:"Portal of Exit", color:"#3AAFA9", tag:"Link 3", detail:"How the agent leaves its reservoir.", list:["Blood","Secretions","Excretions","Skin / open wounds"]},
+  {name:"Mode of Transmission", color:"#E4572E", tag:"Link 4", detail:"How the agent travels from reservoir to susceptible host.", list:["Physical contact","Droplets","Airborne","Ingestion / inhalation"]},
+  {name:"Portal of Entry", color:"#E7B23C", tag:"Link 5", detail:"Way the agent enters the susceptible host.", list:["Mucous membrane","Respiratory system","Digestive system","Broken skin"]},
+  {name:"Susceptible Host", color:"#3AAFA9", tag:"Link 6 · Final", detail:"Individual traits affecting susceptibility & severity of disease.", list:["Immune deficiency","Diabetes","Burns / surgery","Age"]},
+];
+const wheel = document.getElementById('wheel');
+const R = window.innerWidth < 640 ? 110 : 135;
+chainLinks.forEach((link, i)=>{
+  const angle = (Math.PI*2 / chainLinks.length) * i - Math.PI/2;
+  const x = 170 + R*Math.cos(angle);
+  const y = 170 + R*Math.sin(angle);
+  const node = document.createElement('div');
+  node.className = 'wheel-node';
+  node.style.left = x + 'px';
+  node.style.top = y + 'px';
+  node.style.background = link.color;
+  node.textContent = link.name;
+  node.addEventListener('click', ()=>{
+    document.querySelectorAll('.wheel-node').forEach(n=>n.classList.remove('active'));
+    node.classList.add('active');
+    document.getElementById('wheelDetail').innerHTML = `
+      <span class="tag">${link.tag}</span>
+      <h4>${link.name}</h4>
+      <p>${link.detail}</p>
+      <ul>${link.list.map(x=>`<li>${x}</li>`).join('')}</ul>
+    `;
+  });
+  wheel.appendChild(node);
+});
+// fix wheel sizing for mobile via inline positioning above assumed 340 box; adjust center calc if width smaller
+if(window.innerWidth < 640){
+  document.querySelectorAll('.wheel-node').forEach(n=>{
+    n.style.left = parseFloat(n.style.left) * (280/340) + 'px';
+    n.style.top = parseFloat(n.style.top) * (280/340) + 'px';
+  });
+}
+
+/* ================= 2b. TIMELINE ================= */
+const historyEvents = [
+  {yr:"1660", pos:0, who:"Robert Hooke", text:"Observed microorganisms for the first time with a microscope and coined the term \"cell\"."},
+  {yr:"1822–95", pos:16, who:"Louis Pasteur", text:"Defined pasteurization to prevent food spoilage by bacteria; disproved \"Spontaneous Generation\"; defined Germ Theory."},
+  {yr:"1843–1910", pos:34, who:"Robert Koch", text:"Identified anthrax and developed agar growth medium. Koch's postulates established a systematic method to prove microbial cause of disease."},
+  {yr:"1854–1915", pos:52, who:"Paul Ehrlich", text:"Developed chemotherapy to cure infectious diseases; found treatments for sleeping sickness and syphilis."},
+  {yr:"1864–1920", pos:64, who:"Dmitri Ivanovski", text:"Discovered the first virus — the tobacco mosaic virus (TMV)."},
+  {yr:"1881–1951", pos:78, who:"Alexander Fleming", text:"Discovered penicillin and lysozyme."},
+  {yr:"1952", pos:96, who:"Hershey & Chase", text:"Identified that DNA — not protein — was the genetic material of bacteriophages."},
+];
+const dotsWrap = document.getElementById('timelineDots');
+historyEvents.forEach((ev,i)=>{
+  const d = document.createElement('div');
+  d.className = 't-dot';
+  d.style.left = ev.pos + '%';
+  d.dataset.yr = ev.yr;
+  d.addEventListener('click', ()=>{
+    document.querySelectorAll('.t-dot').forEach(x=>x.classList.remove('active'));
+    d.classList.add('active');
+    document.getElementById('timelineDetail').innerHTML = `
+      <span class="yr">${ev.yr}</span>
+      <div class="who">${ev.who}</div>
+      <p>${ev.text}</p>
+    `;
+  });
+  dotsWrap.appendChild(d);
+});
+
+/* ================= 2c. CLASSIFICATION CARDS ================= */
+const classData = [
+  {icon:"🦠", name:"Viruses", info:"Non-cellular infectious agents; discovery began with Ivanovski's tobacco mosaic virus (TMV) — the first virus identified."},
+  {icon:"🧫", name:"Bacteria", info:"Single-celled organisms; studied via Koch's agar medium. Both pathogenic (e.g. anthrax) and industrially useful (e.g. Corynebacterium glutamicum)."},
+  {icon:"🍄", name:"Fungi, Molds & Yeasts", info:"Includes Penicillium (source of penicillin) and yeast used in industrial fermentation (alcohol production)."},
+  {icon:"🪱", name:"Protozoa & Helminths", info:"Parasitic organisms — e.g. Plasmodium falciparum (malaria) and Toxoplasma gondii."},
+];
+const classGrid = document.getElementById('classGrid');
+classData.forEach(c=>{
+  const card = document.createElement('div');
+  card.className = 'class-card';
+  card.innerHTML = `<div><div class="icon">${c.icon}</div><h4>${c.name}</h4></div>
+    <div><span class="toggle-lbl">tap for detail</span><div class="more">${c.info}</div></div>`;
+  card.addEventListener('click', ()=>card.classList.toggle('open'));
+  classGrid.appendChild(card);
+});
+
+/* ================= 2d. PORTAL OF ENTRY TABLE ================= */
+const portals = [
+  {route:"Mouth", mech:"Ingestion of contaminated food/drink", ex:"All gastrointestinal infections."},
+  {route:"Nose", mech:"Inhalation of contaminated air", ex:"Influenza and measles."},
+  {route:"Mucous membranes", mech:"Adhesion", ex:"Hemorrhagic enteritis (E. coli) and syphilis."},
+  {route:"Direct contact", mech:"Inoculation via scratch or trauma", ex:"MRSA (Staphylococcus aureus)."},
+  {route:"Indirect contact — biological vector", mech:"Microbe completes part of its life cycle inside the vector", ex:"Malaria — develops inside the mosquito."},
+  {route:"Indirect contact — mechanical vector", mech:"Insect/animal simply carries the microbe", ex:"E. coli & Shigella via flies; Yersinia pestis via fleas."},
+  {route:"Anal", mech:"Entry via the anus/rectum", ex:"Rectal transmission of pathogens."},
+  {route:"Vaginal", mech:"Entry via urogenital tract (STD/VD)", ex:"Neisseria gonorrhoeae, Trichomonas vaginalis."},
+  {route:"Placental / colostral", mech:"Mother-to-fetus transfer", ex:"AIDS, brucellosis, Toxoplasma gondii."},
+  {route:"Blood", mech:"During blood transfusion", ex:"Hepatitis B, HIV/AIDS."},
+];
+const portalBody = document.getElementById('portalBody');
+portals.forEach((p,i)=>{
+  const row = document.createElement('tr');
+  row.innerHTML = `<td class="route">${p.route}</td><td>${p.mech}</td>`;
+  const exRow = document.createElement('tr');
+  exRow.className = 'example-row';
+  exRow.innerHTML = `<td colspan="2"><div class="portal-example" id="pex${i}"><strong>Lecture example:</strong> ${p.ex}</div></td>`;
+  row.addEventListener('click', ()=>{
+    document.getElementById('pex'+i).classList.toggle('show');
+  });
+  portalBody.appendChild(row);
+  portalBody.appendChild(exRow);
+});
+
+/* ================= 3. MIND MAP ================= */
+const mindNodes = [
+  {id:"hub", hub:true, x:50, y:50, name:"Medical\nMicrobiology", tag:"Hub", title:"Medical Microbiology", text:"The study of pathogenic microorganisms that cause illness in humans — also known as clinical microbiology. Covers transmission modes, portals of entry, virulence factors, pathogenicity, immune response, diagnosis, treatment, prevention, epidemiology and vaccination."},
+  {id:"history", x:14, y:14, name:"History", tag:"Background", title:"History of Microbiology", text:"1660 Hooke observed microbes & named the \"cell\". 1822–95 Pasteur: pasteurization & Germ Theory. 1843–1910 Koch: anthrax & agar medium. 1854–1915 Ehrlich: chemotherapy. 1881–1951 Fleming: penicillin & lysozyme. 1864–1920 Ivanovski: first virus (TMV). 1952 Hershey & Chase: DNA is the genetic material."},
+  {id:"benefits", x:86, y:14, name:"Benefits", tag:"Applications", title:"Benefits of Microbiology", text:"1. Industrial fermentation (alcohol, vinegar, dairy). 2. Antibiotic production (penicillins, cephalosporins, carbapenems). 3. Cloning in complex organisms. 4. Enzyme biotechnology (e.g. Taq polymerase). 5. Amino acid production (Corynebacterium glutamicum → L-glutamate, L-lysine). 6. Bioremediation of waste & pollution. 7. Probiotics & prebiotics for gut health."},
+  {id:"classification", x:14, y:50, name:"Classification", tag:"Groups", title:"Classification of Microorganisms", text:"Four groups: 1) Viruses 2) Bacteria 3) Fungi, molds & yeasts 4) Protozoa & helminths."},
+  {id:"epidemiology", x:86, y:50, name:"Chain of\nInfection", tag:"Epidemiology", title:"Epidemiology — Chain of Infection", text:"Infectious disease results from the interaction of agent, host, and environment. Transmission happens when the agent leaves its reservoir via a portal of exit, travels by some mode of transmission, and enters a new host via a portal of entry. Six links: Infectious Agent → Reservoir → Portal of Exit → Mode of Transmission → Portal of Entry → Susceptible Host."},
+  {id:"host", x:8, y:86, name:"Susceptible\nHost", tag:"Final Link", title:"Susceptible Host", text:"Susceptibility depends on: A) Genetic factors — e.g. sickle cell trait protects against P. falciparum malaria. B) Nonspecific/innate immunity — skin, mucous membranes, gastric acidity, cilia, cough reflex; weakened by malnutrition or immune-suppressing therapy. C) Specific immunity — antibodies against a specific microbe, from infection, vaccine/toxoid, placental transfer, or immune globulin injection."},
+  {id:"agent", x:32, y:96, name:"Infectious\nAgent", tag:"Link 1", title:"Infectious Agent", text:"The pathogen (germ) that causes disease. Source can be Endogenous (already in the body — normal flora imbalance, e.g. E. coli diarrhea) or Exogenous (from outside — carriers like Salmonella typhi in typhoid, zoonosis like Brucella in Malta fever, or soil like Clostridium tetani in tetanus)."},
+  {id:"reservoir", x:68, y:96, name:"Reservoir", tag:"Link 2", title:"Reservoir", text:"The habitat where an infectious agent lives, grows, and multiplies before transfer to a susceptible host. Includes humans, animals, and the environment — e.g. the reservoir of Clostridium botulinum is soil, though most poisonings come from contaminated canned food."},
+  {id:"entry", x:92, y:86, name:"Portal of\nEntry", tag:"Link 5", title:"Portal of Entry", text:"Where the pathogen enters a host: mouth (ingestion), nose (inhalation), mucous membranes (adhesion), contact (direct/inoculation or indirect via biological/mechanical vectors), anal, vaginal, placental/colostral, and blood routes."},
+  {id:"exit", x:97, y:68, name:"Exit &\nTransmission", tag:"Links 3–4", title:"Portal of Exit & Mode of Transmission", text:"Portal of exit: how the agent leaves the reservoir — open wounds, aerosols, coughing, sneezing, saliva. Mode of transmission: how it travels onward — direct contact, indirect contact, ingestion, or inhalation."},
+];
+const svgLines = document.getElementById('mindmapSvgLines');
+const mmBox = document.getElementById('mindmapBox');
+function paintMindmap(){
+  mmBox.querySelectorAll('.node-btn').forEach(n=>n.remove());
+  const w = mmBox.clientWidth, h = Math.max(mmBox.clientWidth*0.82, 380);
+  mmBox.style.height = h+'px';
+  svgLines.setAttribute('width', w); svgLines.setAttribute('height', h);
+  svgLines.innerHTML = '';
+  const hub = mindNodes.find(n=>n.hub);
+  mindNodes.forEach(n=>{
+    if(!n.hub){
+      const line = document.createElementNS('http://www.w3.org/2000/svg','line');
+      line.setAttribute('x1', hub.x/100*w); line.setAttribute('y1', hub.y/100*h);
+      line.setAttribute('x2', n.x/100*w); line.setAttribute('y2', n.y/100*h);
+      svgLines.appendChild(line);
+    }
+    const btn = document.createElement('div');
+    btn.className = 'node-btn' + (n.hub ? ' hub':'');
+    btn.style.left = n.x+'%'; btn.style.top = n.y+'%';
+    btn.innerHTML = n.name.replace('\n','<br>');
+    btn.addEventListener('click', ()=>{
+      mmBox.querySelectorAll('.node-btn').forEach(b=>b.classList.remove('active'));
+      btn.classList.add('active');
+      document.getElementById('mindmapPanel').innerHTML = `
+        <span class="tag">${n.tag}</span>
+        <h4>${n.title}</h4>
+        <p>${n.text}</p>
+      `;
+    });
+    mmBox.appendChild(btn);
+  });
+}
+paintMindmap();
+window.addEventListener('resize', ()=>{ clearTimeout(window._mmT); window._mmT = setTimeout(paintMindmap, 200); });
+
+/* ================= 4. FLASHCARDS ================= */
+const flashData = [
+  {t:"Microbiology", b:"The study of microorganisms — organisms too small to see with the naked eye; found everywhere; some harmful, some useful."},
+  {t:"Medical Microbiology", b:"= Clinical microbiology. The study of pathogenic microorganisms that cause illness (infectious disease) in humans."},
+  {t:"Pasteurization", b:"A process defined by Louis Pasteur to prevent food spoilage caused by bacteria."},
+  {t:"Germ Theory", b:"Pasteur's theory proving that germs (microbes) are responsible for disease."},
+  {t:"Koch's Postulates", b:"A systematic method developed by Robert Koch to establish the microbial cause of a disease."},
+  {t:"Chain of Infection", b:"The sequence: Infectious Agent → Reservoir → Portal of Exit → Mode of Transmission → Portal of Entry → Susceptible Host."},
+  {t:"Reservoir", b:"The habitat where an infectious agent lives, grows, and multiplies — humans, animals, or the environment."},
+  {t:"Portal of Entry", b:"The way an infectious agent enters a susceptible host (e.g. mucous membrane, respiratory tract, digestive tract, broken skin)."},
+  {t:"Portal of Exit", b:"The way an infectious agent leaves its reservoir (open wounds, aerosols, coughing, sneezing, saliva)."},
+  {t:"Mode of Transmission", b:"The way the infectious agent passes from reservoir to host: direct contact, indirect contact, ingestion, or inhalation."},
+  {t:"Susceptible Host", b:"The final link in the chain of infection; susceptibility depends on genetic factors, nonspecific (innate) immunity, and specific immunity."},
+  {t:"Endogenous Source", b:"Microbe normally found in the body, causing infection when the immune system is suppressed or normal flora is imbalanced (e.g. E. coli diarrhea)."},
+  {t:"Exogenous Source", b:"Pathogenic microbes from outside the body — via carriers, zoonosis (animals), or soil."},
+  {t:"Biological Vector", b:"A vector in which the microbe completes part of its life cycle before transmission — e.g. malaria developing inside a mosquito."},
+  {t:"Mechanical Vector", b:"A vector that simply carries the microbe without it developing — e.g. flies carrying E. coli/Shigella, fleas carrying Yersinia pestis."},
+  {t:"Fecal–Oral Route", b:"Transmission where the pathogen exits via feces from the source and enters a new host through the mouth — common in gastritis-causing pathogens."},
+  {t:"Nonspecific (Innate) Immunity", b:"Natural defenses: skin, mucous membranes, gastric acidity, cilia in the respiratory tract, cough reflex."},
+  {t:"Specific Immunity", b:"Protective antibodies directed against a specific microbe — from infection, vaccine/toxoid, placental transfer, or immune globulin injection."},
+  {t:"Probiotics", b:"Bacteria that may be beneficial to the digestive system when taken by humans or animals."},
+  {t:"Prebiotics", b:"Substances taken to promote the growth of probiotic microorganisms."},
+  {t:"Bioremediation", b:"Use of microorganisms to biodegrade domestic, agricultural, and industrial waste and pollution in soil, sediment, and marine environments."},
+  {t:"Taq Polymerase", b:"An important enzyme produced via microbial biotechnology, used as a reporter gene tool in molecular biology techniques."},
+];
+const flashGrid = document.getElementById('flashGrid');
+document.getElementById('flashCount').textContent = flashData.length + ' cards';
+const variants = ['','v2','v3'];
+flashData.forEach((f,i)=>{
+  const card = document.createElement('div');
+  card.className = 'flashcard';
+  card.innerHTML = `
+    <div class="flashcard-inner">
+      <div class="flash-face flash-front ${variants[i%3]}"><span>${f.t}</span></div>
+      <div class="flash-face flash-back"><div><span class="lbl">Definition</span>${f.b}</div></div>
+    </div>`;
+  card.addEventListener('click', ()=>card.classList.toggle('flipped'));
+  flashGrid.appendChild(card);
+});
+
+/* ================= 5. QUIZ BANK ================= */
+const quizRaw = [
+  {q:"Who first observed microorganisms and coined the term \"cell\"?", o:["Robert Hooke","Louis Pasteur","Robert Koch","Alexander Fleming"], c:0},
+  {q:"Louis Pasteur is credited with disproving which scientific dogma?", o:["Germ Theory","Spontaneous Generation","Evolution","Cell Theory"], c:1},
+  {q:"Which scientist identified anthrax and developed agar growth medium?", o:["Paul Ehrlich","Alexander Fleming","Robert Koch","Dmitri Ivanovski"], c:2},
+  {q:"Who developed chemotherapy and treated sleeping sickness and syphilis?", o:["Paul Ehrlich","Robert Hooke","Hershey & Chase","Louis Pasteur"], c:0},
+  {q:"Alexander Fleming discovered penicillin and which other substance?", o:["Insulin","Lysozyme","Streptomycin","Taq polymerase"], c:1},
+  {q:"Who discovered the tobacco mosaic virus (TMV), the first virus identified?", o:["Robert Koch","Dmitri Ivanovski","Paul Ehrlich","Robert Hooke"], c:1},
+  {q:"Hershey & Chase (1952) proved that ___ is the genetic material of bacteriophages.", o:["RNA","Protein","DNA","Lipid"], c:2},
+  {q:"Medical microbiology is also known as:", o:["Applied microbiology","Clinical microbiology","Environmental microbiology","Industrial microbiology"], c:1},
+  {q:"Which bacterium is a major industrial source of L-glutamate and L-lysine?", o:["Escherichia coli","Corynebacterium glutamicum","Acetobacter aceti","Salmonella typhi"], c:1},
+  {q:"Penicillins are naturally produced by fungi of which genus?", o:["Penicillium","Aspergillus","Candida","Saccharomyces"], c:0},
+  {q:"Which is NOT one of the four classifications of microorganisms given in the lecture?", o:["Bacteria","Protozoa and helminths","Algae","Fungi, molds and yeasts"], c:2},
+  {q:"Taq polymerase is highlighted in the lecture as useful for:", o:["Vaccine storage","Molecular biology techniques (reporter genes)","Blood transfusion","Water purification only"], c:1},
+  {q:"In the chain of infection, which link comes FIRST?", o:["Reservoir","Susceptible Host","Infectious Agent","Portal of Entry"], c:2},
+  {q:"Which link describes where the pathogen lives, grows and multiplies before transfer?", o:["Reservoir","Portal of Exit","Mode of Transmission","Susceptible Host"], c:0},
+  {q:"The way an infectious agent leaves its reservoir is called:", o:["Portal of Entry","Portal of Exit","Mode of Transmission","Susceptible Host"], c:1},
+  {q:"The way an infectious agent enters a new host is called:", o:["Portal of Exit","Reservoir","Portal of Entry","Infectious Agent"], c:2},
+  {q:"Which is the FINAL link in the chain of infection?", o:["Infectious Agent","Susceptible Host","Reservoir","Portal of Exit"], c:1},
+  {q:"Sickle cell trait offers protection against which pathogen?", o:["Plasmodium falciparum (malaria)","Salmonella typhi","Clostridium tetani","Brucella species"], c:0},
+  {q:"Skin, mucous membranes, gastric acidity, and cilia are examples of:", o:["Specific immunity","Nonspecific (innate) immunity","Acquired vaccination","Genetic immunity"], c:1},
+  {q:"Antibodies passed from mother to fetus via the placenta are an example of:", o:["Nonspecific immunity","Specific immunity","Genetic immunity","Innate immunity"], c:1},
+  {q:"E. coli diarrhea from normal-flora imbalance is an example of a(n) ___ source of infection.", o:["Exogenous","Zoonotic","Endogenous","Environmental"], c:2},
+  {q:"Typhoid fever transmitted from a human carrier is an example of a(n) ___ source.", o:["Endogenous","Exogenous","Congenital","Iatrogenic"], c:1},
+  {q:"Malta fever is caused by which genus of bacteria?", o:["Salmonella","Brucella","Clostridium","Yersinia"], c:1},
+  {q:"Tetanus (Clostridium tetani) is typically acquired from which reservoir?", o:["Water","Soil","Air","Blood"], c:1},
+  {q:"The natural reservoir of Clostridium botulinum is:", o:["Soil","Human intestine","Contaminated water","Insects"], c:0},
+  {q:"Influenza typically enters the body through which portal of entry?", o:["Mouth (ingestion)","Nose (inhalation/respiratory tract)","Skin (inoculation)","Blood (transfusion)"], c:1},
+  {q:"Diseases where the pathogen exits in feces and enters via the mouth follow which route?", o:["Airborne route","Fecal–oral route","Vector-borne route","Placental route"], c:1},
+  {q:"Malaria transmission through a mosquito, where the parasite develops inside it, is an example of a:", o:["Mechanical vector","Biological vector","Fomite","Direct contact"], c:1},
+  {q:"MRSA (Staphylococcus aureus) entering through a scratch or trauma is an example of:", o:["Indirect contact","Direct contact (inoculation)","Airborne transmission","Fecal-oral transmission"], c:1},
+  {q:"Neisseria gonorrhoeae is typically transmitted via which portal of entry?", o:["Vaginal / urogenital tract","Respiratory tract","Digestive tract","Placenta"], c:0},
+  {q:"HIV and Hepatitis B can be transmitted through which route?", o:["Airborne droplets","Blood (e.g. transfusion)","Ingestion of food","Insect bite"], c:1},
+  {q:"Toxoplasma gondii can be transmitted to a fetus via which route?", o:["Placental transmission","Airborne transmission","Fecal-oral transmission","Mechanical vector"], c:0},
+  {q:"Which factor is described as increasing susceptibility to infection by weakening nonspecific immunity?", o:["Regular exercise","Malnutrition","Vaccination","Probiotic intake"], c:1},
+  {q:"Vinegar production in industrial fermentation relies mainly on which organism group?", o:["Acetobacter species","Penicillium species","Plasmodium species","Clostridium species"], c:0},
+];
+
+function shuffle(arr){
+  const a = arr.slice();
+  for(let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+
+let score = 0, answered = 0;
+const quizList = document.getElementById('quizList');
+
+function buildQuiz(){
+  quizList.innerHTML = '';
+  score = 0; answered = 0;
+  updateScore();
+  quizRaw.forEach((item, qi)=>{
+    const optsWithFlag = item.o.map((text,i)=>({text, correct:i===item.c}));
+    const shuffled = shuffle(optsWithFlag);
+
+    const box = document.createElement('div');
+    box.className = 'quiz-item';
+    box.innerHTML = `
+      <div class="qn">QUESTION ${qi+1} / ${quizRaw.length}</div>
+      <div class="qtext">${item.q}</div>
+      <div class="quiz-options"></div>
+    `;
+    const optWrap = box.querySelector('.quiz-options');
+    shuffled.forEach(opt=>{
+      const b = document.createElement('button');
+      b.className = 'quiz-option';
+      b.textContent = opt.text;
+      b.addEventListener('click', ()=>{
+        if(box.dataset.done) return;
+        box.dataset.done = '1';
+        answered++;
+        optWrap.querySelectorAll('.quiz-option').forEach(o=>o.disabled=true);
+        if(opt.correct){ b.classList.add('correct'); score++; }
+        else {
+          b.classList.add('wrong');
+          [...optWrap.children].find(el=>el.textContent===shuffled.find(s=>s.correct).text).classList.add('correct');
+        }
+        updateScore();
+      });
+      optWrap.appendChild(b);
+    });
+    quizList.appendChild(box);
+  });
+}
+function updateScore(){
+  document.getElementById('quizScore').textContent = `Score: ${score} / ${quizRaw.length}`;
+}
+document.getElementById('quizReset').addEventListener('click', buildQuiz);
+buildQuiz();
+</script>
+</body>
+</html>
