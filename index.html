@@ -271,6 +271,27 @@
   #mindmapSvgLines{ position:absolute; inset:0; width:100%; height:100%; z-index:1; }
   #mindmapSvgLines line{ stroke:var(--line-strong); stroke-width:1.5; }
 
+  /* ---------- difficulty level pills (shared: flashcards + quiz) ---------- */
+  .level-tabs{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:18px; }
+  .level-btn{
+    display:flex; align-items:center; gap:8px;
+    padding:9px 18px 9px 14px;
+    background:var(--bg2); border:1px solid var(--line); border-radius:999px;
+    color:var(--agar-dim); font-family:'IBM Plex Mono',monospace; font-size:12px; letter-spacing:0.03em;
+    cursor:pointer; transition:all .25s ease;
+  }
+  .level-btn .lv-dot{ width:9px; height:9px; border-radius:50%; background:currentColor; opacity:0.55; flex-shrink:0; }
+  .level-btn:hover{ border-color:var(--line-strong); color:var(--agar); }
+  .level-btn.active{ background:var(--agar); color:var(--ink); border-color:var(--agar); box-shadow:var(--shadow); }
+  .level-btn.active .lv-dot{ opacity:1; }
+  .level-btn[data-level="easy"].active{ color:var(--ink); }
+  .level-btn[data-level="easy"] .lv-dot{ background:var(--teal); }
+  .level-btn[data-level="medium"] .lv-dot{ background:var(--gold); }
+  .level-btn[data-level="hard"] .lv-dot{ background:var(--coral); }
+  .level-btn.active[data-level="easy"]{ border-color:var(--teal); }
+  .level-btn.active[data-level="medium"]{ border-color:var(--gold); }
+  .level-btn.active[data-level="hard"]{ border-color:var(--coral); }
+
   /* ===================== 4. FLASHCARDS ===================== */
   .flash-toolbar{ display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; flex-wrap:wrap; gap:10px;}
   .flash-count{ font-family:'IBM Plex Mono',monospace; font-size:12px; color:var(--agar-dim); }
@@ -525,7 +546,12 @@
     <div class="section-head">
       <span class="eyebrow">Flip to reveal</span>
       <h2>Flash Cards</h2>
-      <p>Every key term from the lecture, front and back.</p>
+      <p>Every key term from the lecture, front and back — pick a difficulty level.</p>
+    </div>
+    <div class="level-tabs" id="flashLevelTabs">
+      <button class="level-btn active" data-level="easy"><span class="lv-dot"></span>Level 1 · Easy</button>
+      <button class="level-btn" data-level="medium"><span class="lv-dot"></span>Level 2 · Medium</button>
+      <button class="level-btn" data-level="hard"><span class="lv-dot"></span>Level 3 · Hard</button>
     </div>
     <div class="flash-toolbar">
       <span class="flash-count" id="flashCount">0 cards</span>
@@ -538,7 +564,12 @@
     <div class="section-head">
       <span class="eyebrow">Test yourself</span>
       <h2>Quiz Bank</h2>
-      <p>30+ questions. Answer choices reshuffle every time you load this page.</p>
+      <p>150 questions across 3 difficulty levels. Answer choices reshuffle every time you load this page.</p>
+    </div>
+    <div class="level-tabs" id="quizLevelTabs">
+      <button class="level-btn active" data-level="easy"><span class="lv-dot"></span>Level 1 · Easy</button>
+      <button class="level-btn" data-level="medium"><span class="lv-dot"></span>Level 2 · Medium</button>
+      <button class="level-btn" data-level="hard"><span class="lv-dot"></span>Level 3 · Hard</button>
     </div>
     <div class="quiz-toolbar">
       <span class="quiz-score" id="quizScore">Score: 0 / 0</span>
@@ -730,82 +761,2154 @@ paintMindmap();
 window.addEventListener('resize', ()=>{ clearTimeout(window._mmT); window._mmT = setTimeout(paintMindmap, 200); });
 
 /* ================= 4. FLASHCARDS ================= */
-const flashData = [
-  {t:"Microbiology", b:"The study of microorganisms — organisms too small to see with the naked eye; found everywhere; some harmful, some useful."},
-  {t:"Medical Microbiology", b:"= Clinical microbiology. The study of pathogenic microorganisms that cause illness (infectious disease) in humans."},
-  {t:"Pasteurization", b:"A process defined by Louis Pasteur to prevent food spoilage caused by bacteria."},
-  {t:"Germ Theory", b:"Pasteur's theory proving that germs (microbes) are responsible for disease."},
-  {t:"Koch's Postulates", b:"A systematic method developed by Robert Koch to establish the microbial cause of a disease."},
-  {t:"Chain of Infection", b:"The sequence: Infectious Agent → Reservoir → Portal of Exit → Mode of Transmission → Portal of Entry → Susceptible Host."},
-  {t:"Reservoir", b:"The habitat where an infectious agent lives, grows, and multiplies — humans, animals, or the environment."},
-  {t:"Portal of Entry", b:"The way an infectious agent enters a susceptible host (e.g. mucous membrane, respiratory tract, digestive tract, broken skin)."},
-  {t:"Portal of Exit", b:"The way an infectious agent leaves its reservoir (open wounds, aerosols, coughing, sneezing, saliva)."},
-  {t:"Mode of Transmission", b:"The way the infectious agent passes from reservoir to host: direct contact, indirect contact, ingestion, or inhalation."},
-  {t:"Susceptible Host", b:"The final link in the chain of infection; susceptibility depends on genetic factors, nonspecific (innate) immunity, and specific immunity."},
-  {t:"Endogenous Source", b:"Microbe normally found in the body, causing infection when the immune system is suppressed or normal flora is imbalanced (e.g. E. coli diarrhea)."},
-  {t:"Exogenous Source", b:"Pathogenic microbes from outside the body — via carriers, zoonosis (animals), or soil."},
-  {t:"Biological Vector", b:"A vector in which the microbe completes part of its life cycle before transmission — e.g. malaria developing inside a mosquito."},
-  {t:"Mechanical Vector", b:"A vector that simply carries the microbe without it developing — e.g. flies carrying E. coli/Shigella, fleas carrying Yersinia pestis."},
-  {t:"Fecal–Oral Route", b:"Transmission where the pathogen exits via feces from the source and enters a new host through the mouth — common in gastritis-causing pathogens."},
-  {t:"Nonspecific (Innate) Immunity", b:"Natural defenses: skin, mucous membranes, gastric acidity, cilia in the respiratory tract, cough reflex."},
-  {t:"Specific Immunity", b:"Protective antibodies directed against a specific microbe — from infection, vaccine/toxoid, placental transfer, or immune globulin injection."},
-  {t:"Probiotics", b:"Bacteria that may be beneficial to the digestive system when taken by humans or animals."},
-  {t:"Prebiotics", b:"Substances taken to promote the growth of probiotic microorganisms."},
-  {t:"Bioremediation", b:"Use of microorganisms to biodegrade domestic, agricultural, and industrial waste and pollution in soil, sediment, and marine environments."},
-  {t:"Taq Polymerase", b:"An important enzyme produced via microbial biotechnology, used as a reporter gene tool in molecular biology techniques."},
-];
+const flashData = {
+  easy: [
+  {
+    "t": "Microbiology",
+    "b": "The study of microorganisms — living things too small to see with the naked eye."
+  },
+  {
+    "t": "Are microbes found everywhere, and are they all harmful?",
+    "b": "They are found everywhere; some are harmful (deadly diseases) while others are useful (industrial processes, recycling of elements)."
+  },
+  {
+    "t": "Medical Microbiology",
+    "b": "The study of pathogenic microorganisms that cause illness in humans; also called clinical microbiology."
+  },
+  {
+    "t": "Another name for Medical Microbiology",
+    "b": "Clinical microbiology."
+  },
+  {
+    "t": "Infectious diseases",
+    "b": "Illnesses caused by pathogenic microorganisms; related to public health of populations."
+  },
+  {
+    "t": "Robert Hooke — year",
+    "b": "1660."
+  },
+  {
+    "t": "Robert Hooke's discovery",
+    "b": "First observed microorganisms with a microscope and coined the term \"cell\"."
+  },
+  {
+    "t": "Who coined the term \"cell\"?",
+    "b": "Robert Hooke, in 1660."
+  },
+  {
+    "t": "Louis Pasteur — years",
+    "b": "1822–1895."
+  },
+  {
+    "t": "Louis Pasteur's key achievements",
+    "b": "Defined pasteurization, disproved \"Spontaneous Generation\", and defined \"Germ Theory\"."
+  },
+  {
+    "t": "Pasteurization",
+    "b": "A process defined by Louis Pasteur to prevent spoilage of food by bacteria."
+  },
+  {
+    "t": "Germ Theory",
+    "b": "Pasteur's theory proving that germs are responsible for disease."
+  },
+  {
+    "t": "Spontaneous Generation",
+    "b": "The old scientific dogma disproved by Louis Pasteur."
+  },
+  {
+    "t": "Robert Koch — years",
+    "b": "1843–1910."
+  },
+  {
+    "t": "Robert Koch's achievements",
+    "b": "Identified anthrax and developed agar growth medium."
+  },
+  {
+    "t": "Koch's Postulates",
+    "b": "A systematic method Koch developed to establish the microbial cause of a disease."
+  },
+  {
+    "t": "Who developed agar growth medium?",
+    "b": "Robert Koch."
+  },
+  {
+    "t": "Paul Ehrlich — years",
+    "b": "1854–1915."
+  },
+  {
+    "t": "Paul Ehrlich's achievement",
+    "b": "Developed chemotherapy to cure infectious diseases; treated sleeping sickness and syphilis."
+  },
+  {
+    "t": "Alexander Fleming — years",
+    "b": "1881–1951."
+  },
+  {
+    "t": "Alexander Fleming's discoveries",
+    "b": "Discovered penicillin and lysozyme."
+  },
+  {
+    "t": "Who discovered penicillin?",
+    "b": "Alexander Fleming."
+  },
+  {
+    "t": "Dmitri Ivanovski — years",
+    "b": "1864–1920."
+  },
+  {
+    "t": "Dmitri Ivanovski's discovery",
+    "b": "Discovered the first virus — the tobacco mosaic virus (TMV)."
+  },
+  {
+    "t": "Tobacco Mosaic Virus (TMV)",
+    "b": "The first virus ever discovered, identified by Dmitri Ivanovski."
+  },
+  {
+    "t": "Hershey & Chase — year",
+    "b": "1952."
+  },
+  {
+    "t": "Hershey & Chase discovery",
+    "b": "Identified that DNA was the genetic material of bacteriophages."
+  },
+  {
+    "t": "Benefit 1: Industrial fermentation",
+    "b": "Production of alcohol (yeast), vinegar (Acetobacteraceae), and dairy products."
+  },
+  {
+    "t": "Benefit 2: Antibiotic production",
+    "b": "Beta-lactam antibacterials — penicillins, cephalosporins, and carbapenems."
+  },
+  {
+    "t": "Which fungus produces penicillins?",
+    "b": "Fungi of the genus Penicillium."
+  },
+  {
+    "t": "Benefit 3: Cloning",
+    "b": "Microbiology is used for cloning in more complex organisms such as plants."
+  },
+  {
+    "t": "Benefit 4: Biotechnological enzymes",
+    "b": "Production of important enzymes such as Taq polymerase and reporter genes for molecular biology."
+  },
+  {
+    "t": "Benefit 5: Amino acid production",
+    "b": "Bacteria are used for industrial production of amino acids, mainly by Corynebacterium glutamicum."
+  },
+  {
+    "t": "Corynebacterium glutamicum products",
+    "b": "Produces mainly L-glutamate and L-lysine, over two million tons annually."
+  },
+  {
+    "t": "Benefit 6: Bioremediation",
+    "b": "Microorganisms biodegrade domestic, agricultural, and industrial wastes, and pollution in soil, sediment, and marine environments."
+  },
+  {
+    "t": "Benefit 7: Probiotics",
+    "b": "Bacteria that may be beneficial to the digestive system."
+  },
+  {
+    "t": "Prebiotics",
+    "b": "Substances taken to promote the growth of probiotic microorganisms."
+  },
+  {
+    "t": "Classification of microorganisms — how many groups?",
+    "b": "Four groups."
+  },
+  {
+    "t": "Classification of microorganisms — list",
+    "b": "1. Viruses  2. Bacteria  3. Fungi, molds and yeasts  4. Protozoa and helminths."
+  },
+  {
+    "t": "What does Medical Microbiology study?",
+    "b": "Characteristics of pathogenic microbes, modes of transmission, portals of entry, virulence factors, pathogenicity, immune response, symptoms, diagnosis, lab tests, treatment, prevention, epidemiology, and vaccination."
+  },
+  {
+    "t": "Infectious disease results from",
+    "b": "The interaction of agent, host, and environment (epidemiology)."
+  },
+  {
+    "t": "Chain of Infection — definition",
+    "b": "The sequence by which an agent leaves its reservoir, travels by a mode of transmission, and enters a new host."
+  },
+  {
+    "t": "Chain of Infection — 6 links",
+    "b": "Infectious Agent → Reservoir → Portal of Exit → Mode of Transmission → Portal of Entry → Susceptible Host."
+  },
+  {
+    "t": "Link 1: Infectious Agents (examples)",
+    "b": "Bacteria, fungi, parasites, prions."
+  },
+  {
+    "t": "Link 2: Reservoirs (examples)",
+    "b": "People, water, food."
+  },
+  {
+    "t": "Link 3: Portals of Exit (examples)",
+    "b": "Blood, secretions, excretions, skin."
+  },
+  {
+    "t": "Link 4: Modes of Transmission (examples)",
+    "b": "Physical contact, droplets, airborne."
+  },
+  {
+    "t": "Link 5: Portals of Entry (examples)",
+    "b": "Mucous membrane, respiratory system, digestive system, broken skin."
+  },
+  {
+    "t": "Link 6: Susceptible Host (examples)",
+    "b": "Immune deficiency, diabetes, burns, surgery, age."
+  },
+  {
+    "t": "Reservoir — definition",
+    "b": "The habitat of an infectious agent where it lives, grows, and multiplies before transfer to a host."
+  },
+  {
+    "t": "Reservoir types",
+    "b": "Humans, animals, and the environment."
+  },
+  {
+    "t": "Reservoir of Clostridium botulinum",
+    "b": "Soil — but the source of most poisonings is canned food containing the spores."
+  },
+  {
+    "t": "Portal of Entry — definition",
+    "b": "The way a pathogen enters a host (e.g. broken skin, respiratory tract, mucous membranes, catheters)."
+  },
+  {
+    "t": "Portal of Entry — mouth",
+    "b": "Ingestion of contaminated food or drinks; causes gastrointestinal infections."
+  },
+  {
+    "t": "Portal of Entry — nose",
+    "b": "Inhalation of contaminated air; e.g. influenza and measles."
+  },
+  {
+    "t": "Portal of Exit — definition",
+    "b": "The way an infectious agent leaves the reservoir — open wounds, aerosols, coughing, sneezing, saliva."
+  },
+  {
+    "t": "Means of Transmission — list",
+    "b": "Direct contact, indirect contact, ingestion, or inhalation."
+  },
+  {
+    "t": "Endogenous source of infection",
+    "b": "The microbe is normally found in the body and causes infection when the immune system is suppressed or after long antibiotic use."
+  },
+  {
+    "t": "Exogenous source of infection",
+    "b": "Pathogenic microbes come from outside the body (carriers, zoonosis, soil)."
+  },
+  {
+    "t": "Susceptible Host — 3 factors",
+    "b": "A. Genetic factors  B. Nonspecific (innate) immunity  C. Specific immunity."
+  }
+],
+  medium: [
+  {
+    "t": "Pasteur's double contribution",
+    "b": "He BOTH disproved Spontaneous Generation AND founded Germ Theory — showing microbes cause disease rather than arising from non-living matter."
+  },
+  {
+    "t": "Koch vs Pasteur — key difference in contribution",
+    "b": "Pasteur proved germs cause disease (Germ Theory); Koch supplied the systematic method (postulates) to prove WHICH microbe causes a SPECIFIC disease."
+  },
+  {
+    "t": "Chronological order of 3 earliest discoveries",
+    "b": "Hooke (1660, cell) → Pasteur (1822–1895, pasteurization/germ theory) → Koch (1843–1910, anthrax/agar)."
+  },
+  {
+    "t": "Fleming's dual discovery and their difference",
+    "b": "Penicillin (an antibiotic that kills bacteria) and lysozyme (a natural enzyme in body secretions with antibacterial action)."
+  },
+  {
+    "t": "Ehrlich's field of medicine founded",
+    "b": "Chemotherapy — using chemical compounds to treat infectious disease, applied to sleeping sickness and syphilis."
+  },
+  {
+    "t": "Significance of Ivanovski's TMV discovery",
+    "b": "It proved the existence of pathogens smaller than bacteria (filterable agents), founding virology."
+  },
+  {
+    "t": "Significance of Hershey & Chase (1952)",
+    "b": "Settled the debate over whether protein or DNA carries heredity — proving DNA is the genetic material, using bacteriophages."
+  },
+  {
+    "t": "Why is Corynebacterium glutamicum industrially important?",
+    "b": "It is one of the most important bacterial species for amino acid production — over 2 million tons/year, mainly L-glutamate and L-lysine."
+  },
+  {
+    "t": "Beta-lactam antibacterials — 3 subclasses",
+    "b": "Penicillins, cephalosporins, and carbapenems — all sharing the beta-lactam ring, though produced/derived differently."
+  },
+  {
+    "t": "Fermentation vs bioremediation — key difference",
+    "b": "Fermentation harnesses microbes to PRODUCE useful substances (alcohol, vinegar, dairy); bioremediation harnesses microbes to DEGRADE/remove pollutants."
+  },
+  {
+    "t": "Probiotics vs Prebiotics — relationship",
+    "b": "Probiotics ARE the beneficial bacteria; prebiotics are substances that FEED/promote the growth of those probiotic bacteria."
+  },
+  {
+    "t": "Why does medical microbiology include epidemiology?",
+    "b": "Because infectious diseases affect populations, not just individuals, so tracking their spread (public health) is part of the discipline."
+  },
+  {
+    "t": "Full scope of medical microbiology in one line",
+    "b": "From pathogen characteristics and transmission all the way through diagnosis, treatment, prevention, and vaccination — the complete disease cycle."
+  },
+  {
+    "t": "The 3 components of the epidemiologic triad",
+    "b": "Agent, host, and environment — infectious disease results from their interaction."
+  },
+  {
+    "t": "Why call it a \"chain\" of infection?",
+    "b": "Because it is a sequence of 6 dependent links; breaking any single link stops transmission."
+  },
+  {
+    "t": "Order the chain of infection correctly",
+    "b": "Infectious Agent → Reservoir → Portal of Exit → Mode of Transmission → Portal of Entry → Susceptible Host."
+  },
+  {
+    "t": "Reservoir vs Source — C. botulinum example",
+    "b": "The RESERVOIR (where it naturally lives) is soil, but the SOURCE of most human poisoning is canned food contaminated with its spores."
+  },
+  {
+    "t": "Why is the susceptible host called the \"final link\"?",
+    "b": "Because it is the last step in the chain — if the host resists infection, the chain of transmission is broken."
+  },
+  {
+    "t": "Sickle cell trait and malaria — the nuance",
+    "b": "It protects specifically against Plasmodium falciparum, NOT against other malaria-causing species — showing genetic protection can be pathogen-specific."
+  },
+  {
+    "t": "Nonspecific vs Specific immunity — core difference",
+    "b": "Nonspecific (innate) immunity defends broadly against any microbe (skin, cilia, gastric acid); specific immunity targets ONE particular microbe via antibodies."
+  },
+  {
+    "t": "3 ways specific antibodies can be acquired",
+    "b": "By infection, by vaccine/toxoid, or by placental transfer/injection of antitoxin or immune globulin."
+  },
+  {
+    "t": "What weakens nonspecific immunity, raising infection risk?",
+    "b": "Malnutrition, and disease or therapy that suppresses the immune response."
+  },
+  {
+    "t": "Endogenous infection — mechanism explained",
+    "b": "Normal flora already present in the body overgrows/causes disease once the immune system is suppressed or long antibiotic use disturbs the microbial balance."
+  },
+  {
+    "t": "Classic example of an endogenous infection",
+    "b": "Diarrhea caused by the person's own E. coli after normal flora imbalance."
+  },
+  {
+    "t": "3 classic exogenous source examples and their category",
+    "b": "Typhoid (Salmonella typhi) from a carrier person; Malta fever (Brucella sp.) from animals (zoonosis); Tetanus (Clostridium tetani) from soil."
+  },
+  {
+    "t": "Why is influenza an example of matching portals?",
+    "b": "It exits the respiratory tract of the source AND enters the respiratory tract of the new host — portal of exit matches portal of entry."
+  },
+  {
+    "t": "Fecal–oral route — why that name?",
+    "b": "Pathogens exit the source in feces (portal of exit) and enter the new host through the mouth (portal of entry) — common in gastritis pathogens."
+  },
+  {
+    "t": "Biological vector — defining feature",
+    "b": "The pathogen actually completes part of its life cycle INSIDE the vector before being transmitted — e.g. malaria developing in a mosquito."
+  },
+  {
+    "t": "Mechanical vector — defining feature",
+    "b": "The vector simply carries the microbe on/in its body without the microbe developing — e.g. flies carrying E. coli/Shigella."
+  },
+  {
+    "t": "Two mechanical vector examples from the lecture",
+    "b": "Flies transmitting E. coli and Shigella sp.; fleas carrying Yersinia pestis."
+  },
+  {
+    "t": "Direct vs indirect contact transmission",
+    "b": "Direct contact = inoculation via scratch/trauma (e.g. MRSA); indirect contact = transmission via a vector (biological or mechanical)."
+  },
+  {
+    "t": "MRSA transmission classification",
+    "b": "Direct contact — inoculation through scratched skin or trauma."
+  },
+  {
+    "t": "Two STI/venereal pathogens named in the lecture",
+    "b": "Neisseria gonorrhoeae and Trichomonas vaginalis — transmitted via the vaginal/urogenital portal."
+  },
+  {
+    "t": "Three diseases transmitted via placental/colostral route",
+    "b": "AIDS, brucellosis, and toxoplasmosis (Toxoplasma gondii)."
+  },
+  {
+    "t": "Two blood-borne pathogens named in the lecture",
+    "b": "Hepatitis B virus and HIV — transmitted via blood, e.g. during transfusion."
+  },
+  {
+    "t": "Hemorrhagic enteritis portal of entry",
+    "b": "E. coli enters via mucous membrane adhesion — same portal class as syphilis."
+  },
+  {
+    "t": "Why do gastrointestinal infections use the oral portal?",
+    "b": "Because they result from ingestion of food or drink contaminated with the pathogen."
+  },
+  {
+    "t": "List ALL human portals of entry (A–H) mentioned",
+    "b": "Mouth (ingestion), Nose (inhalation), Mucous membranes (adhesion), Contact (direct/indirect via vectors), Anal, Vaginal, Blood, Placental/colostral."
+  },
+  {
+    "t": "Portal of Exit — full list of routes",
+    "b": "Open wounds, aerosols, coughing, sneezing, saliva."
+  },
+  {
+    "t": "How the target tissue requirement limits portals of entry",
+    "b": "The portal of entry must give the pathogen access to a tissue where it can attach, multiply, or where its toxins can act — not just any contact route works."
+  },
+  {
+    "t": "Difference between Portal of Entry and Portal of Exit",
+    "b": "Portal of Exit is how the agent LEAVES the reservoir/source; Portal of Entry is how it ENTERS the new susceptible host."
+  },
+  {
+    "t": "Why catheters and healthcare settings count as portals of entry",
+    "b": "Because they create artificial breaches (broken-skin-like access) that bypass normal physical barriers."
+  },
+  {
+    "t": "Relationship between vinegar production and a bacterial family",
+    "b": "Vinegar is produced through fermentation by bacteria of the family Acetobacteraceae."
+  },
+  {
+    "t": "Why is Taq polymerase highlighted as a microbiological product?",
+    "b": "It is a heat-stable enzyme from a microorganism, used as a key tool (with reporter genes) in molecular biology techniques."
+  },
+  {
+    "t": "How cloning links microbiology to plant biotechnology",
+    "b": "Microbiological cloning techniques are extended for use in more complex organisms such as plants."
+  },
+  {
+    "t": "Which scientist's discovery gave rise to the field of virology?",
+    "b": "Dmitri Ivanovski, through his discovery of the tobacco mosaic virus (TMV)."
+  },
+  {
+    "t": "Why do genetic factors matter within the \"susceptible host\" link?",
+    "b": "An individual's genetics can INCREASE or DECREASE susceptibility to a specific pathogen, unlike general immune defenses."
+  },
+  {
+    "t": "Relationship: reservoir type across humans, animals, environment",
+    "b": "All three can serve as a reservoir depending on the disease — e.g. humans for typhoid, animals for brucellosis, soil for tetanus."
+  },
+  {
+    "t": "Two examples showing exogenous ≠ only \"other people\"",
+    "b": "Zoonotic transmission (animals, e.g. Brucella) and environmental transmission (soil, e.g. Clostridium tetani) are also exogenous, not just person-to-person."
+  },
+  {
+    "t": "Why cephalosporins and carbapenems are grouped with penicillins",
+    "b": "All three are classified together as beta-lactam antibacterials sharing a common structural feature."
+  }
+],
+  hard: [
+  {
+    "t": "Compare Koch's and Pasteur's legacies as a causal framework",
+    "b": "Pasteur established THAT microbes cause disease (Germ Theory), overturning Spontaneous Generation; Koch established HOW to prove causation for any given microbe-disease pair (postulates) — together they built the causal logic of medical microbiology."
+  },
+  {
+    "t": "Trace how history builds toward modern antimicrobial therapy",
+    "b": "Ehrlich founded chemotherapy (chemical cure) → Fleming discovered penicillin (natural antibiotic) → together these establish the two roots of modern antimicrobial treatment: synthetic chemotherapy and naturally-derived antibiotics."
+  },
+  {
+    "t": "Why does Hershey & Chase (1952) matter for ALL of microbiology, not just virology?",
+    "b": "By proving DNA (not protein) is the genetic material using bacteriophages, it established the molecular basis of heredity that underlies bacterial genetics, virulence gene transfer, and modern molecular diagnostics."
+  },
+  {
+    "t": "Construct the full causal chain for a case of Clostridium botulinum poisoning",
+    "b": "Reservoir = soil → agent contaminates canned food (indirect source) → Portal of Exit not from a living host but from the contaminated food itself → ingestion (Portal of Entry, mouth) → toxin acts on susceptible host — illustrating that reservoir and immediate source can differ."
+  },
+  {
+    "t": "Differentiate: a patient's own flora causing disease vs. a true zoonosis, using chain-of-infection logic",
+    "b": "Endogenous (E. coli diarrhea) skips the classic Reservoir→Portal of Exit→Transmission steps since agent and host are already the same; exogenous zoonosis (Brucella from animals) requires the full chain, crossing from an animal reservoir via exit/transmission/entry into a new species."
+  },
+  {
+    "t": "Why can sickle cell trait be protective for ONE pathogen but not a defense against the disease category as a whole?",
+    "b": "Because innate/genetic resistance can be highly specific to a pathogen's biology (P. falciparum's invasion of sickled red cells is impaired) rather than conferring general immunity to all causes of malaria — showing genetic susceptibility factors are not interchangeable across related pathogens."
+  },
+  {
+    "t": "Rank the three susceptible-host factors by specificity and justify",
+    "b": "Genetic factors (fixed, pathogen-specific, e.g. sickle cell/malaria) < Nonspecific/innate immunity (broad, first-line, non-pathogen-specific: skin, cilia, gastric acid) < Specific immunity (narrowly targeted antibodies against one microbe) — specificity increases from genetic to specific immunity."
+  },
+  {
+    "t": "A patient develops diarrhea after weeks of broad-spectrum antibiotics with no new exposure — classify the source and explain the mechanism",
+    "b": "Endogenous source — the antibiotics disturbed the normal flora balance, allowing a normally-controlled resident organism (e.g. E. coli) to overgrow and cause disease, without any external transmission event."
+  },
+  {
+    "t": "Distinguish malaria transmission from fly-borne Shigella transmission using vector biology",
+    "b": "Malaria = biological vector transmission (Plasmodium develops through life-cycle stages inside the mosquito before becoming infectious); Shigella-by-fly = mechanical vector transmission (the fly merely carries the organism externally/in its gut without it developing) — the organism's dependency on the vector's biology is the distinguishing feature."
+  },
+  {
+    "t": "Explain why influenza's portal of exit and portal of entry are described as \"matching\"",
+    "b": "Because the virus exits the respiratory tract of the infected source and specifically re-enters via the respiratory tract of the new host — showing that portal of exit and portal of entry are often tissue-tropism-matched, not arbitrary."
+  },
+  {
+    "t": "Construct the complete chain of infection for gonorrhea",
+    "b": "Agent = Neisseria gonorrhoeae → Reservoir = infected human → Portal of Exit = genital secretions → Mode of Transmission = direct (sexual) contact → Portal of Entry = vaginal/urogenital mucosa → Susceptible Host = person with mucosal exposure."
+  },
+  {
+    "t": "Why are placental/colostral transmission diseases (AIDS, brucellosis, toxoplasmosis) grouped together despite being caused by very different organism types?",
+    "b": "Because the shared feature is the PORTAL of transmission (mother-to-offspring via placenta/colostrum), not the organism class — AIDS is viral, brucellosis is bacterial, toxoplasmosis is protozoal, showing portals of entry are defined by transmission ROUTE, not pathogen taxonomy."
+  },
+  {
+    "t": "A pathogen requires access to a tissue where it can attach or its toxin can act — how does this rule out treating all skin contact as a portal of entry?",
+    "b": "Simple surface contact with intact skin is not a portal of entry because intact skin blocks access to susceptible tissue; only broken skin, mucous membranes, or catheter sites provide the necessary tissue access — the definition of \"portal\" is functional, not just physical touching."
+  },
+  {
+    "t": "Compare tetanus and typhoid as exogenous infections in terms of reservoir type",
+    "b": "Tetanus (Clostridium tetani) — environmental reservoir (soil); Typhoid (Salmonella typhi) — human reservoir (patient/carrier) — both are exogenous, but the underlying reservoir category (environment vs. human) differs, affecting prevention strategy (wound care vs. carrier identification/sanitation)."
+  },
+  {
+    "t": "Why does the lecture separate \"nonspecific factors\" from \"specific immunity\" rather than treating immunity as one category?",
+    "b": "Because they operate on different timelines and mechanisms — nonspecific/innate defenses (skin, cilia, gastric acid, cough reflex) act immediately and broadly against any microbe, while specific immunity requires prior exposure/antibody development and targets one microbe precisely — this distinction affects how vaccines vs. barrier interventions are designed."
+  },
+  {
+    "t": "Explain how malnutrition operates as a susceptibility factor within the chain of infection framework",
+    "b": "Malnutrition does not introduce a new pathogen; instead it weakens the nonspecific (innate) immune response at the Susceptible Host link, lowering the threshold needed for an agent to establish infection — it acts on host resistance, not on the agent or transmission route."
+  },
+  {
+    "t": "Integrate: how do biotechnological benefits of microbiology (Taq polymerase, cloning, amino acid production) relate back to Hershey & Chase's 1952 discovery?",
+    "b": "Once DNA was proven to be the genetic material, molecular tools exploiting DNA (PCR using Taq polymerase, gene cloning in plants, engineered bacterial strains like Corynebacterium glutamicum) became possible — the historical discovery is the foundation enabling the applied biotechnological benefits."
+  },
+  {
+    "t": "Why might two different diseases (hepatitis B and HIV) be grouped under the same portal of entry despite differing severity/course?",
+    "b": "Because portal of entry classification is based on the ROUTE the pathogen uses to access the host (blood, e.g. transfusion) — not on disease severity, chronicity, or viral family — grouping reflects transmission mechanism, not clinical outcome."
+  },
+  {
+    "t": "Critically distinguish \"source\" from \"reservoir\" beyond the botulinum example",
+    "b": "Reservoir = long-term natural habitat where the agent lives/multiplies indefinitely; Source = the immediate object/person from which a specific host actually acquired the infection — a reservoir can persist for years while a source is a single transmission event's origin, and they need not be the same entity."
+  },
+  {
+    "t": "Why is the chain of infection considered a useful MODEL for prevention/control strategies (implied by the lecture's structure)?",
+    "b": "Because each of its 6 links represents an independent point of intervention (e.g. treating the agent, eliminating the reservoir, blocking the exit, interrupting transmission, protecting the portal of entry, or boosting host resistance) — breaking any single link halts the infectious process."
+  },
+  {
+    "t": "Analyze why prebiotics are classified as a benefit of microbiology despite not being living organisms",
+    "b": "Because the benefit category covers anything leveraging microbial biology for health — prebiotics work indirectly by selectively feeding beneficial resident microbes (probiotics), so the effect still operates through microorganisms even though the substance itself is not one."
+  },
+  {
+    "t": "Contrast the industrial roles of Acetobacteraceae and Corynebacterium glutamicum",
+    "b": "Acetobacteraceae ferment ethanol into acetic acid to make vinegar (oxidative fermentation, food product); C. glutamicum is cultured to overproduce specific amino acids (L-glutamate, L-lysine) at industrial scale — one exploits a metabolic byproduct, the other engineered overproduction."
+  },
+  {
+    "t": "Why does the lecture list vaccination as part of medical microbiology's scope only \"if found\"?",
+    "b": "Because not every pathogen has an available vaccine — vaccination is a conditional, final preventive tool depending on whether immunization exists for that organism, unlike diagnosis or treatment which apply universally."
+  },
+  {
+    "t": "Using the chain of infection, explain why catheter-associated infections are especially dangerous",
+    "b": "A catheter creates an artificial, persistent portal of entry bypassing the skin's normal barrier continuously — removing a nonspecific defense and converting a normally low-risk contact route into a sustained high-risk entry point."
+  },
+  {
+    "t": "Compare direct inoculation (MRSA) and biological-vector transmission (malaria) in required infectious steps",
+    "b": "Direct inoculation delivers the pathogen straight into tissue via a breach, no external replication step needed; biological-vector transmission requires the pathogen to complete a developmental cycle inside the vector before it becomes infectious."
+  },
+  {
+    "t": "Why is \"virulence factors\" listed separately from \"pathogenicity\" in medical microbiology's scope?",
+    "b": "Pathogenicity is the general capacity to cause disease; virulence factors are the specific molecular tools (toxins, adhesins, enzymes) determining the DEGREE of damage — one is categorical, the other mechanistic."
+  },
+  {
+    "t": "Link Koch's postulates to the modern requirement of studying \"characteristics of pathogenic microbes\" first",
+    "b": "Koch's postulates require isolating/characterizing the causative organism before concluding it causes disease — this is the direct ancestor of why medical microbiology's scope always begins with organism characteristics before transmission or treatment."
+  },
+  {
+    "t": "The same organism spreads by both droplets and fecal-oral route in different cases — how is \"mode of transmission\" classified?",
+    "b": "Mode of transmission is assigned per transmission EVENT, not fixed per pathogen — the same organism can occupy multiple categories depending on which portal of exit/entry is involved in that specific case."
+  },
+  {
+    "t": "Why does placental transmission blur the line between \"portal of entry\" and \"reservoir\"?",
+    "b": "The mother simultaneously acts as reservoir (harboring the organism) and portal of entry (via placenta/colostrum) to the fetus — two normally distinct chain-of-infection concepts collapse into one maternal source in vertical transmission."
+  },
+  {
+    "t": "Is intact skin ever a valid \"portal of entry\" per the lecture's definition?",
+    "b": "No — only BROKEN skin is listed as a portal; intact skin instead functions as a nonspecific immune barrier, showing the same structure can be either a defense or a portal depending on its integrity."
+  },
+  {
+    "t": "Contrast sickle cell protection and specific-antibody protection as mechanisms",
+    "b": "Sickle cell protection is a fixed, inherited structural trait present from birth; specific immunity is an acquired, inducible antibody response from infection/vaccine/transfer — one is structural/passive, the other adaptive/active."
+  },
+  {
+    "t": "Why does distinguishing a \"carrier\" from a \"patient\" matter for controlling typhoid?",
+    "b": "A carrier sheds Salmonella typhi without symptoms, acting as a hidden ongoing reservoir; a symptomatic patient is more easily identified and isolated — carriers pose a greater challenge to breaking the chain of infection."
+  },
+  {
+    "t": "How are Ehrlich's syphilis treatment and syphilis's later mucous-membrane portal description connected in the lecture?",
+    "b": "Ehrlich's chemotherapy historically targeted syphilis before antibiotics existed; later the lecture describes syphilis's transmission mechanism (mucous membrane adhesion) — together showing the same disease as both a treatment landmark and a transmission-route example."
+  },
+  {
+    "t": "If a pathogen can use both biological and mechanical vectors depending on insect species, what decides the classification?",
+    "b": "Whether the pathogen develops/multiplies inside that specific vector — if so, it's biological for that vector; if merely carried externally without developing, that event is mechanical — classification is vector-specific, not organism-fixed."
+  },
+  {
+    "t": "Why does the lecture stress reservoirs include humans, animals, AND the environment, not just living hosts?",
+    "b": "Because agents like Clostridium tetani/botulinum persist and multiply in non-living reservoirs like soil, independent of any host — recognizing environmental reservoirs matters since treating infected humans/animals alone cannot eliminate them."
+  },
+  {
+    "t": "Why might vaccination be positioned after \"prevention\" rather than merged into it in medical microbiology's scope?",
+    "b": "Vaccination is a specific, agent-targeted subtype of the broader prevention category (which also includes general hygiene or vector control) — listing it separately signals it as the most specific, immunologically-targeted tool, contingent on a vaccine existing."
+  },
+  {
+    "t": "Why is understanding portals of ENTRY arguably more clinically actionable than portals of EXIT?",
+    "b": "Portals of entry are on the susceptible host's side, where protective interventions (barriers, catheter care, vaccination) can be directly applied; portals of exit depend on controlling an already-infected source, often less predictable."
+  },
+  {
+    "t": "Compare Pasteur's experimental disproof method to Koch's postulate-based proof and their lasting diagnostic impact",
+    "b": "Pasteur used controlled experiments to disprove a false theory (spontaneous generation); Koch built a stepwise positive causal framework (postulates) — modern diagnostics still follow Koch's isolate-culture-reintroduce-reisolate logic, not Pasteur's disproof style."
+  },
+  {
+    "t": "Why can brucellosis appear under BOTH \"exogenous source\" and \"placental/colostral transmission\" in the same lecture?",
+    "b": "These categories classify different things — exogenous source describes origin relative to the human body (from an animal); placental/colostral transmission describes the specific human-to-human portal route — a disease can be exogenous overall while also having a distinct vertical-transmission portal."
+  },
+  {
+    "t": "Why is \"age\" grouped with immune deficiency, diabetes, burns, and surgery as a susceptible-host factor?",
+    "b": "All five share the mechanism of compromising host defenses — extremes of age are linked to immature or declining immune function, placing age in the same functional category as conditions that directly suppress immunity."
+  }
+]
+};
 const flashGrid = document.getElementById('flashGrid');
-document.getElementById('flashCount').textContent = flashData.length + ' cards';
+const flashCountEl = document.getElementById('flashCount');
 const variants = ['','v2','v3'];
-flashData.forEach((f,i)=>{
-  const card = document.createElement('div');
-  card.className = 'flashcard';
-  card.innerHTML = `
-    <div class="flashcard-inner">
-      <div class="flash-face flash-front ${variants[i%3]}"><span>${f.t}</span></div>
-      <div class="flash-face flash-back"><div><span class="lbl">Definition</span>${f.b}</div></div>
-    </div>`;
-  card.addEventListener('click', ()=>card.classList.toggle('flipped'));
-  flashGrid.appendChild(card);
+let currentFlashLevel = 'easy';
+
+function renderFlashcards(level){
+  currentFlashLevel = level;
+  const data = flashData[level];
+  flashGrid.innerHTML = '';
+  flashCountEl.textContent = data.length + ' cards';
+  data.forEach((f,i)=>{
+    const card = document.createElement('div');
+    card.className = 'flashcard';
+    card.innerHTML = `
+      <div class="flashcard-inner">
+        <div class="flash-face flash-front ${variants[i%3]}"><span>${f.t}</span></div>
+        <div class="flash-face flash-back"><div><span class="lbl">Definition</span>${f.b}</div></div>
+      </div>`;
+    card.addEventListener('click', ()=>card.classList.toggle('flipped'));
+    flashGrid.appendChild(card);
+  });
+}
+document.querySelectorAll('#flashLevelTabs .level-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#flashLevelTabs .level-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    renderFlashcards(btn.dataset.level);
+  });
 });
+renderFlashcards('easy');
 
 /* ================= 5. QUIZ BANK ================= */
-const quizRaw = [
-  {q:"Who first observed microorganisms and coined the term \"cell\"?", o:["Robert Hooke","Louis Pasteur","Robert Koch","Alexander Fleming"], c:0},
-  {q:"Louis Pasteur is credited with disproving which scientific dogma?", o:["Germ Theory","Spontaneous Generation","Evolution","Cell Theory"], c:1},
-  {q:"Which scientist identified anthrax and developed agar growth medium?", o:["Paul Ehrlich","Alexander Fleming","Robert Koch","Dmitri Ivanovski"], c:2},
-  {q:"Who developed chemotherapy and treated sleeping sickness and syphilis?", o:["Paul Ehrlich","Robert Hooke","Hershey & Chase","Louis Pasteur"], c:0},
-  {q:"Alexander Fleming discovered penicillin and which other substance?", o:["Insulin","Lysozyme","Streptomycin","Taq polymerase"], c:1},
-  {q:"Who discovered the tobacco mosaic virus (TMV), the first virus identified?", o:["Robert Koch","Dmitri Ivanovski","Paul Ehrlich","Robert Hooke"], c:1},
-  {q:"Hershey & Chase (1952) proved that ___ is the genetic material of bacteriophages.", o:["RNA","Protein","DNA","Lipid"], c:2},
-  {q:"Medical microbiology is also known as:", o:["Applied microbiology","Clinical microbiology","Environmental microbiology","Industrial microbiology"], c:1},
-  {q:"Which bacterium is a major industrial source of L-glutamate and L-lysine?", o:["Escherichia coli","Corynebacterium glutamicum","Acetobacter aceti","Salmonella typhi"], c:1},
-  {q:"Penicillins are naturally produced by fungi of which genus?", o:["Penicillium","Aspergillus","Candida","Saccharomyces"], c:0},
-  {q:"Which is NOT one of the four classifications of microorganisms given in the lecture?", o:["Bacteria","Protozoa and helminths","Algae","Fungi, molds and yeasts"], c:2},
-  {q:"Taq polymerase is highlighted in the lecture as useful for:", o:["Vaccine storage","Molecular biology techniques (reporter genes)","Blood transfusion","Water purification only"], c:1},
-  {q:"In the chain of infection, which link comes FIRST?", o:["Reservoir","Susceptible Host","Infectious Agent","Portal of Entry"], c:2},
-  {q:"Which link describes where the pathogen lives, grows and multiplies before transfer?", o:["Reservoir","Portal of Exit","Mode of Transmission","Susceptible Host"], c:0},
-  {q:"The way an infectious agent leaves its reservoir is called:", o:["Portal of Entry","Portal of Exit","Mode of Transmission","Susceptible Host"], c:1},
-  {q:"The way an infectious agent enters a new host is called:", o:["Portal of Exit","Reservoir","Portal of Entry","Infectious Agent"], c:2},
-  {q:"Which is the FINAL link in the chain of infection?", o:["Infectious Agent","Susceptible Host","Reservoir","Portal of Exit"], c:1},
-  {q:"Sickle cell trait offers protection against which pathogen?", o:["Plasmodium falciparum (malaria)","Salmonella typhi","Clostridium tetani","Brucella species"], c:0},
-  {q:"Skin, mucous membranes, gastric acidity, and cilia are examples of:", o:["Specific immunity","Nonspecific (innate) immunity","Acquired vaccination","Genetic immunity"], c:1},
-  {q:"Antibodies passed from mother to fetus via the placenta are an example of:", o:["Nonspecific immunity","Specific immunity","Genetic immunity","Innate immunity"], c:1},
-  {q:"E. coli diarrhea from normal-flora imbalance is an example of a(n) ___ source of infection.", o:["Exogenous","Zoonotic","Endogenous","Environmental"], c:2},
-  {q:"Typhoid fever transmitted from a human carrier is an example of a(n) ___ source.", o:["Endogenous","Exogenous","Congenital","Iatrogenic"], c:1},
-  {q:"Malta fever is caused by which genus of bacteria?", o:["Salmonella","Brucella","Clostridium","Yersinia"], c:1},
-  {q:"Tetanus (Clostridium tetani) is typically acquired from which reservoir?", o:["Water","Soil","Air","Blood"], c:1},
-  {q:"The natural reservoir of Clostridium botulinum is:", o:["Soil","Human intestine","Contaminated water","Insects"], c:0},
-  {q:"Influenza typically enters the body through which portal of entry?", o:["Mouth (ingestion)","Nose (inhalation/respiratory tract)","Skin (inoculation)","Blood (transfusion)"], c:1},
-  {q:"Diseases where the pathogen exits in feces and enters via the mouth follow which route?", o:["Airborne route","Fecal–oral route","Vector-borne route","Placental route"], c:1},
-  {q:"Malaria transmission through a mosquito, where the parasite develops inside it, is an example of a:", o:["Mechanical vector","Biological vector","Fomite","Direct contact"], c:1},
-  {q:"MRSA (Staphylococcus aureus) entering through a scratch or trauma is an example of:", o:["Indirect contact","Direct contact (inoculation)","Airborne transmission","Fecal-oral transmission"], c:1},
-  {q:"Neisseria gonorrhoeae is typically transmitted via which portal of entry?", o:["Vaginal / urogenital tract","Respiratory tract","Digestive tract","Placenta"], c:0},
-  {q:"HIV and Hepatitis B can be transmitted through which route?", o:["Airborne droplets","Blood (e.g. transfusion)","Ingestion of food","Insect bite"], c:1},
-  {q:"Toxoplasma gondii can be transmitted to a fetus via which route?", o:["Placental transmission","Airborne transmission","Fecal-oral transmission","Mechanical vector"], c:0},
-  {q:"Which factor is described as increasing susceptibility to infection by weakening nonspecific immunity?", o:["Regular exercise","Malnutrition","Vaccination","Probiotic intake"], c:1},
-  {q:"Vinegar production in industrial fermentation relies mainly on which organism group?", o:["Acetobacter species","Penicillium species","Plasmodium species","Clostridium species"], c:0},
-];
+const quizRaw = {
+  easy: [
+  {
+    "q": "Microbiology is the study of:",
+    "o": [
+      "Microorganisms",
+      "Only bacteria",
+      "Only viruses",
+      "Human anatomy"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Medical microbiology is also known as:",
+    "o": [
+      "Applied microbiology",
+      "Clinical microbiology",
+      "Industrial microbiology",
+      "Environmental microbiology"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Who first observed microorganisms and coined the term \"cell\"?",
+    "o": [
+      "Robert Hooke",
+      "Louis Pasteur",
+      "Robert Koch",
+      "Alexander Fleming"
+    ],
+    "c": 0
+  },
+  {
+    "q": "In what year did Robert Hooke observe microorganisms and coin \"cell\"?",
+    "o": [
+      "1660",
+      "1822",
+      "1843",
+      "1952"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Louis Pasteur lived during which years?",
+    "o": [
+      "1660–1720",
+      "1822–1895",
+      "1843–1910",
+      "1881–1951"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Louis Pasteur defined pasteurization to prevent:",
+    "o": [
+      "Bacterial spoilage of food",
+      "Viral mutation",
+      "Fungal growth on skin",
+      "Blood clotting"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which scientific dogma did Louis Pasteur disprove?",
+    "o": [
+      "Germ Theory",
+      "Spontaneous Generation",
+      "Cell Theory",
+      "Evolution"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Pasteur's theory proving germs cause disease is called:",
+    "o": [
+      "Koch's Postulates",
+      "Germ Theory",
+      "Chain of Infection",
+      "Spontaneous Generation"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Robert Koch identified which disease-causing organism?",
+    "o": [
+      "Anthrax",
+      "Tuberculosis only",
+      "Malaria",
+      "Cholera"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Robert Koch developed which laboratory tool?",
+    "o": [
+      "Penicillin",
+      "Agar growth medium",
+      "Vaccine",
+      "Microscope"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Koch's systematic method to establish microbial cause of disease is called:",
+    "o": [
+      "Germ Theory",
+      "Koch's Postulates",
+      "Pasteurization",
+      "Chain of Infection"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Robert Koch lived during which years?",
+    "o": [
+      "1822–1895",
+      "1843–1910",
+      "1854–1915",
+      "1864–1920"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Paul Ehrlich developed which field of medicine?",
+    "o": [
+      "Chemotherapy",
+      "Surgery",
+      "Radiology",
+      "Genetics"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Paul Ehrlich's chemotherapy was used to treat:",
+    "o": [
+      "Sleeping sickness and syphilis",
+      "Malaria and typhoid",
+      "Tetanus and anthrax",
+      "Influenza and measles"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Alexander Fleming discovered penicillin and which other substance?",
+    "o": [
+      "Insulin",
+      "Lysozyme",
+      "Streptomycin",
+      "Taq polymerase"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Alexander Fleming lived during which years?",
+    "o": [
+      "1843–1910",
+      "1854–1915",
+      "1881–1951",
+      "1864–1920"
+    ],
+    "c": 2
+  },
+  {
+    "q": "Dmitri Ivanovski discovered which virus?",
+    "o": [
+      "HIV",
+      "Tobacco mosaic virus (TMV)",
+      "Influenza virus",
+      "Hepatitis B virus"
+    ],
+    "c": 1
+  },
+  {
+    "q": "The tobacco mosaic virus (TMV) is historically significant because it was:",
+    "o": [
+      "The first virus discovered",
+      "The first bacterium discovered",
+      "The first antibiotic",
+      "The first vaccine"
+    ],
+    "c": 0
+  },
+  {
+    "q": "In what year did Hershey & Chase identify DNA as the genetic material of bacteriophages?",
+    "o": [
+      "1660",
+      "1895",
+      "1910",
+      "1952"
+    ],
+    "c": 3
+  },
+  {
+    "q": "Hershey & Chase's discovery concerned the genetic material of:",
+    "o": [
+      "Humans",
+      "Bacteriophages",
+      "Plants",
+      "Fungi"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Industrial fermentation is used to produce alcohol using which organism?",
+    "o": [
+      "Yeast",
+      "Bacteria only",
+      "Protozoa",
+      "Prions"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Vinegar is produced industrially using which organism group?",
+    "o": [
+      "Acetobacteraceae",
+      "Penicillium",
+      "Plasmodium",
+      "Clostridium"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Penicillins are naturally produced by fungi of which genus?",
+    "o": [
+      "Penicillium",
+      "Aspergillus",
+      "Candida",
+      "Saccharomyces"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Beta-lactam antibacterials include penicillins, cephalosporins, and:",
+    "o": [
+      "Carbapenems",
+      "Macrolides",
+      "Tetracyclines",
+      "Aminoglycosides"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Microbiology techniques are also used for cloning in which type of organism?",
+    "o": [
+      "Plants",
+      "Only bacteria",
+      "Only viruses",
+      "Only fungi"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Taq polymerase is an example of a microbiologically produced:",
+    "o": [
+      "Antibiotic",
+      "Enzyme",
+      "Vaccine",
+      "Vitamin"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Which bacterium is a major industrial source of amino acids like L-glutamate and L-lysine?",
+    "o": [
+      "Escherichia coli",
+      "Corynebacterium glutamicum",
+      "Salmonella typhi",
+      "Clostridium tetani"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Corynebacterium glutamicum produces more than how many tons of amino acids annually?",
+    "o": [
+      "Two thousand tons",
+      "Two million tons",
+      "Two hundred tons",
+      "Twenty million tons"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Microorganisms are useful for degrading wastes and pollution — this is called:",
+    "o": [
+      "Bioremediation",
+      "Pasteurization",
+      "Fermentation",
+      "Chemotherapy"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Bacteria that may be beneficial to the digestive system are called:",
+    "o": [
+      "Probiotics",
+      "Prebiotics",
+      "Pathogens",
+      "Prions"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Substances taken to promote the growth of probiotic microorganisms are called:",
+    "o": [
+      "Probiotics",
+      "Prebiotics",
+      "Antibiotics",
+      "Antigens"
+    ],
+    "c": 1
+  },
+  {
+    "q": "How many groups make up the classification of microorganisms in this lecture?",
+    "o": [
+      "Two",
+      "Three",
+      "Four",
+      "Five"
+    ],
+    "c": 2
+  },
+  {
+    "q": "Which of the following is NOT one of the four classifications of microorganisms?",
+    "o": [
+      "Bacteria",
+      "Protozoa and helminths",
+      "Algae",
+      "Fungi, molds and yeasts"
+    ],
+    "c": 2
+  },
+  {
+    "q": "Viruses belong to which classification group of microorganisms?",
+    "o": [
+      "Group 1",
+      "Group 2",
+      "Group 3",
+      "Group 4"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Medical microbiology studies illnesses that are called:",
+    "o": [
+      "Infectious diseases",
+      "Genetic disorders",
+      "Metabolic disorders",
+      "Autoimmune diseases"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Infectious disease results from the interaction of agent, host, and:",
+    "o": [
+      "Environment",
+      "Government",
+      "Economy",
+      "Climate only"
+    ],
+    "c": 0
+  },
+  {
+    "q": "The sequence by which an agent moves from reservoir to a new host is called the:",
+    "o": [
+      "Chain of infection",
+      "Germ theory",
+      "Koch's postulates",
+      "Immune cascade"
+    ],
+    "c": 0
+  },
+  {
+    "q": "In the chain of infection, which link comes FIRST?",
+    "o": [
+      "Reservoir",
+      "Susceptible Host",
+      "Infectious Agent",
+      "Portal of Entry"
+    ],
+    "c": 2
+  },
+  {
+    "q": "Which link in the chain of infection comes LAST?",
+    "o": [
+      "Infectious Agent",
+      "Susceptible Host",
+      "Reservoir",
+      "Portal of Exit"
+    ],
+    "c": 1
+  },
+  {
+    "q": "The habitat where an infectious agent lives, grows, and multiplies is called the:",
+    "o": [
+      "Reservoir",
+      "Portal of Entry",
+      "Portal of Exit",
+      "Vector"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Reservoirs of infectious agents include humans, animals, and:",
+    "o": [
+      "The environment",
+      "Only hospitals",
+      "Only laboratories",
+      "Only insects"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What is the natural reservoir of Clostridium botulinum?",
+    "o": [
+      "Soil",
+      "Human intestine",
+      "Contaminated water",
+      "Insects"
+    ],
+    "c": 0
+  },
+  {
+    "q": "The way a pathogen enters a host is called the portal of:",
+    "o": [
+      "Exit",
+      "Entry",
+      "Transmission",
+      "Reservoir"
+    ],
+    "c": 1
+  },
+  {
+    "q": "The way an infectious agent leaves its reservoir is called the portal of:",
+    "o": [
+      "Entry",
+      "Exit",
+      "Susceptibility",
+      "Transmission"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Which of these is an example of a portal of exit?",
+    "o": [
+      "Coughing/sneezing",
+      "Vaccination",
+      "Antibiotics",
+      "Pasteurization"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Means of transmission listed in the lecture include direct contact, indirect contact, ingestion, and:",
+    "o": [
+      "Inhalation",
+      "Injection only",
+      "Surgery",
+      "Digestion only"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Ingestion of contaminated food or drink typically enters through which portal?",
+    "o": [
+      "Mouth",
+      "Nose",
+      "Skin",
+      "Blood"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Influenza and measles typically enter the body via which portal?",
+    "o": [
+      "Nose (respiratory tract)",
+      "Mouth (ingestion)",
+      "Skin (inoculation)",
+      "Blood (transfusion)"
+    ],
+    "c": 0
+  },
+  {
+    "q": "MRSA (Staphylococcus aureus) entering through a scratch or trauma is an example of:",
+    "o": [
+      "Direct contact (inoculation)",
+      "Indirect contact",
+      "Airborne transmission",
+      "Fecal-oral transmission"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Malaria transmission through a mosquito, where the parasite develops inside it, is an example of a:",
+    "o": [
+      "Mechanical vector",
+      "Biological vector",
+      "Direct contact",
+      "Fomite"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Flies transmitting E. coli or Shigella are examples of:",
+    "o": [
+      "Biological vectors",
+      "Mechanical vectors",
+      "Direct contact",
+      "Placental transmission"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Fleas carrying Yersinia pestis are an example of:",
+    "o": [
+      "Biological vector",
+      "Mechanical vector",
+      "Direct contact",
+      "Airborne transmission"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Neisseria gonorrhoeae is typically transmitted via which portal of entry?",
+    "o": [
+      "Vaginal/urogenital tract",
+      "Respiratory tract",
+      "Digestive tract",
+      "Placenta"
+    ],
+    "c": 0
+  },
+  {
+    "q": "HIV and Hepatitis B can be transmitted through which route?",
+    "o": [
+      "Airborne droplets",
+      "Blood (e.g. transfusion)",
+      "Ingestion of food",
+      "Insect bite only"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Toxoplasma gondii can be transmitted to a fetus via which route?",
+    "o": [
+      "Placental transmission",
+      "Airborne transmission",
+      "Fecal-oral transmission",
+      "Mechanical vector"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which factor is described as increasing susceptibility to infection by weakening immunity?",
+    "o": [
+      "Regular exercise",
+      "Malnutrition",
+      "Vaccination",
+      "Probiotic intake"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Skin, mucous membranes, gastric acidity, and cilia are examples of:",
+    "o": [
+      "Specific immunity",
+      "Nonspecific (innate) immunity",
+      "Acquired vaccination only",
+      "Genetic immunity"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Antibodies passed from mother to fetus via the placenta are an example of:",
+    "o": [
+      "Nonspecific immunity",
+      "Specific immunity",
+      "Innate immunity",
+      "Genetic immunity"
+    ],
+    "c": 1
+  },
+  {
+    "q": "Sickle cell trait offers protection against which pathogen?",
+    "o": [
+      "Plasmodium falciparum (malaria)",
+      "Salmonella typhi",
+      "Clostridium tetani",
+      "Brucella species"
+    ],
+    "c": 0
+  },
+  {
+    "q": "E. coli diarrhea from normal-flora imbalance is an example of a(n) ___ source of infection.",
+    "o": [
+      "Exogenous",
+      "Zoonotic",
+      "Endogenous",
+      "Environmental"
+    ],
+    "c": 2
+  }
+],
+  medium: [
+  {
+    "q": "Which pair correctly matches scientist to BOTH achievements?",
+    "o": [
+      "Pasteur — pasteurization & germ theory",
+      "Koch — penicillin & lysozyme",
+      "Fleming — anthrax & agar medium",
+      "Ehrlich — TMV & bacteriophage genetics"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Placing events in order, which sequence is chronologically correct?",
+    "o": [
+      "Hooke → Pasteur → Koch → Hershey & Chase",
+      "Koch → Hooke → Fleming → Pasteur",
+      "Hershey & Chase → Hooke → Koch → Pasteur",
+      "Fleming → Hooke → Ehrlich → Koch"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What is the key difference between Pasteur's and Koch's contributions?",
+    "o": [
+      "Pasteur proved germs cause disease in general; Koch gave a method to prove which microbe causes a specific disease",
+      "Pasteur discovered penicillin; Koch discovered DNA",
+      "Pasteur worked on viruses; Koch worked on fungi",
+      "There is no meaningful difference"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Fleming's two discoveries (penicillin and lysozyme) differ in that:",
+    "o": [
+      "Penicillin is an antibiotic; lysozyme is a natural antibacterial enzyme in secretions",
+      "Both are synthetic chemotherapy drugs",
+      "Penicillin is an enzyme; lysozyme is an antibiotic",
+      "Both are types of vaccines"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why is Ivanovski's discovery of TMV considered foundational?",
+    "o": [
+      "It proved pathogens smaller than bacteria exist, founding virology",
+      "It proved bacteria cause all disease",
+      "It disproved germ theory",
+      "It identified the first antibiotic"
+    ],
+    "c": 0
+  },
+  {
+    "q": "The significance of Hershey & Chase's 1952 experiment was that it:",
+    "o": [
+      "Proved DNA, not protein, is the genetic material",
+      "Discovered the first antibiotic",
+      "Proved spontaneous generation was false",
+      "Identified the first virus"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which statement about beta-lactam antibacterials is correct?",
+    "o": [
+      "Penicillins, cephalosporins, and carbapenems all belong to this group",
+      "Only penicillins are beta-lactams",
+      "Cephalosporins are unrelated to penicillins",
+      "Beta-lactams include probiotics"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What distinguishes fermentation from bioremediation as microbiological benefits?",
+    "o": [
+      "Fermentation produces useful substances; bioremediation degrades pollutants",
+      "They are the same process",
+      "Fermentation only degrades waste",
+      "Bioremediation only produces alcohol"
+    ],
+    "c": 0
+  },
+  {
+    "q": "How are probiotics and prebiotics related?",
+    "o": [
+      "Prebiotics promote the growth of probiotic bacteria",
+      "Probiotics promote the growth of prebiotics",
+      "They are identical substances",
+      "Prebiotics are a type of antibiotic"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why does medical microbiology's scope include epidemiology?",
+    "o": [
+      "Because infectious diseases affect populations and relate to public health",
+      "Because epidemiology is unrelated to infection",
+      "Because only viruses require epidemiology",
+      "Because epidemiology replaces diagnosis"
+    ],
+    "c": 0
+  },
+  {
+    "q": "The epidemiologic triad consists of:",
+    "o": [
+      "Agent, host, and environment",
+      "Agent, vector, and vaccine",
+      "Host, symptom, and treatment",
+      "Reservoir, antibody, and portal"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which correctly orders the full chain of infection?",
+    "o": [
+      "Agent → Reservoir → Portal of Exit → Transmission → Portal of Entry → Host",
+      "Agent → Host → Reservoir → Portal of Exit → Transmission → Entry",
+      "Reservoir → Agent → Entry → Exit → Transmission → Host",
+      "Host → Agent → Reservoir → Entry → Exit → Transmission"
+    ],
+    "c": 0
+  },
+  {
+    "q": "For Clostridium botulinum, what is the difference between its reservoir and the source of most human poisonings?",
+    "o": [
+      "Reservoir is soil; source of poisoning is often canned food",
+      "Reservoir is canned food; source is soil",
+      "Both are identical (soil)",
+      "Reservoir is water; source is air"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why is the susceptible host called the \"final link\" in the chain of infection?",
+    "o": [
+      "It is the last step; if resisted, the chain is broken",
+      "It is the first step in transmission",
+      "It refers to the pathogen itself",
+      "It has no real significance"
+    ],
+    "c": 0
+  },
+  {
+    "q": "The lecture notes sickle cell trait protects against malaria caused specifically by:",
+    "o": [
+      "Plasmodium falciparum only",
+      "All Plasmodium species equally",
+      "Plasmodium vivax only",
+      "No specific species"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What is the core difference between nonspecific and specific immunity?",
+    "o": [
+      "Nonspecific defends broadly against any microbe; specific targets one particular microbe via antibodies",
+      "Nonspecific only applies to viruses; specific only to bacteria",
+      "They are the same mechanism",
+      "Specific immunity is always inherited genetically"
+    ],
+    "c": 0
+  },
+  {
+    "q": "According to the lecture, specific antibodies can be acquired by all of the following EXCEPT:",
+    "o": [
+      "Infection",
+      "Vaccine or toxoid",
+      "Placental transfer or immune globulin injection",
+      "Spontaneous generation"
+    ],
+    "c": 3
+  },
+  {
+    "q": "What two factors are described as weakening nonspecific immunity and raising infection risk?",
+    "o": [
+      "Malnutrition and disease/therapy that suppresses immune response",
+      "Vaccination and probiotics",
+      "Exercise and healthy diet",
+      "Age alone with no other factor"
+    ],
+    "c": 0
+  },
+  {
+    "q": "The mechanism behind an endogenous infection like E. coli diarrhea is:",
+    "o": [
+      "Normal flora imbalance after immune suppression or long antibiotic use",
+      "A new pathogen entering from outside the body",
+      "Vector-borne transmission from an insect",
+      "Airborne transmission from another person"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Typhoid, Malta fever, and Tetanus are all examples of which type of source?",
+    "o": [
+      "Exogenous",
+      "Endogenous",
+      "Congenital",
+      "Nosocomial only"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Typhoid (Salmonella typhi) as an exogenous source typically comes from:",
+    "o": [
+      "A patient or carrier person",
+      "Soil",
+      "An insect vector only",
+      "The patient's own normal flora"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Malta fever (Brucella sp.) is an example of exogenous infection acquired from:",
+    "o": [
+      "Animals (zoonosis)",
+      "Soil",
+      "A human carrier",
+      "Contaminated blood only"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Tetanus (Clostridium tetani) is an example of exogenous infection acquired from:",
+    "o": [
+      "Soil",
+      "Animals",
+      "A human carrier",
+      "Airborne droplets"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why is influenza described as having \"matching\" portals of exit and entry?",
+    "o": [
+      "It exits the respiratory tract of the source and enters the respiratory tract of the new host",
+      "It exits via feces and enters via the mouth",
+      "It exits via blood and enters via skin",
+      "It exits via skin and enters via the eye"
+    ],
+    "c": 0
+  },
+  {
+    "q": "The fecal–oral route is named because the pathogen:",
+    "o": [
+      "Exits in feces and enters via the mouth",
+      "Exits via mouth and enters via feces",
+      "Exits via blood and enters via mouth",
+      "Exits via skin and enters via feces"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What defines a biological vector, as opposed to a mechanical vector?",
+    "o": [
+      "The pathogen completes part of its life cycle inside the vector",
+      "The vector only carries the pathogen externally",
+      "The vector is always an insect",
+      "There is no difference between them"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What defines a mechanical vector?",
+    "o": [
+      "It carries the pathogen without the pathogen developing inside it",
+      "It is required for the pathogen's life cycle",
+      "It only applies to malaria",
+      "It refers to blood transfusion"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which of the following pairs correctly matches vector type to example?",
+    "o": [
+      "Biological vector — malaria in mosquito; Mechanical vector — flies carrying Shigella",
+      "Biological vector — flies carrying Shigella; Mechanical vector — malaria in mosquito",
+      "Both are biological vectors",
+      "Both are mechanical vectors"
+    ],
+    "c": 0
+  },
+  {
+    "q": "MRSA transmission via scratch or trauma is classified as:",
+    "o": [
+      "Direct contact (inoculation)",
+      "Indirect contact via biological vector",
+      "Indirect contact via mechanical vector",
+      "Airborne transmission"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which two pathogens are given as examples of venereal (vaginal) transmission?",
+    "o": [
+      "Neisseria gonorrhoeae and Trichomonas vaginalis",
+      "Salmonella typhi and Brucella sp.",
+      "HIV and Hepatitis B",
+      "E. coli and Shigella sp."
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which three diseases are given as examples of placental/colostral transmission?",
+    "o": [
+      "AIDS, brucellosis, and toxoplasmosis",
+      "Tetanus, typhoid, and malaria",
+      "Influenza, measles, and syphilis",
+      "MRSA, gonorrhea, and TMV infection"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Hepatitis B and HIV are given as examples of transmission via:",
+    "o": [
+      "Blood (e.g. transfusion)",
+      "Respiratory droplets",
+      "Fecal-oral route",
+      "Vector bites only"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Hemorrhagic enteritis caused by E. coli and syphilis are both given as examples of which portal mechanism?",
+    "o": [
+      "Mucous membrane adhesion",
+      "Direct skin inoculation",
+      "Airborne inhalation",
+      "Blood transfusion"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why must a portal of entry give access to a specific target tissue?",
+    "o": [
+      "Because the pathogen must attach, multiply, or have its toxin act there",
+      "Because all portals work identically regardless of tissue",
+      "Because skin contact alone is always sufficient",
+      "Because portals of entry are unrelated to tissue"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What is the key difference between portal of entry and portal of exit?",
+    "o": [
+      "Exit is how the agent leaves the reservoir/source; entry is how it enters the new host",
+      "They mean exactly the same thing",
+      "Entry only applies to viruses; exit only to bacteria",
+      "Exit refers to vaccination; entry refers to treatment"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why are catheters and healthcare settings considered portals of entry?",
+    "o": [
+      "They create artificial access that can bypass normal physical barriers",
+      "They boost the immune system",
+      "They are examples of vaccination",
+      "They are unrelated to infection risk"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Vinegar production relies specifically on which bacterial family?",
+    "o": [
+      "Acetobacteraceae",
+      "Enterobacteriaceae",
+      "Mycobacteriaceae",
+      "Spirochaetaceae"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why is Taq polymerase highlighted as an important microbiological product?",
+    "o": [
+      "It is used with reporter genes as a tool in molecular biology techniques",
+      "It is an antibiotic used to treat infections",
+      "It is a vaccine component",
+      "It is a type of probiotic bacterium"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Microbiological cloning techniques are noted in the lecture as being extended to:",
+    "o": [
+      "More complex organisms such as plants",
+      "Only bacteria",
+      "Only viruses",
+      "Only fungi"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which scientist's discovery is credited with founding the field of virology?",
+    "o": [
+      "Dmitri Ivanovski",
+      "Robert Koch",
+      "Paul Ehrlich",
+      "Alexander Fleming"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why do genetic factors behave differently from general immune defenses in susceptibility?",
+    "o": [
+      "Genetics can increase or decrease susceptibility to a SPECIFIC pathogen, unlike general immune defenses",
+      "Genetics always weakens all immunity equally",
+      "Genetics has no role in susceptibility",
+      "Genetic factors are identical to vaccination"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which set of examples correctly shows reservoirs across humans, animals, and environment?",
+    "o": [
+      "Typhoid (human), brucellosis (animal), tetanus (soil/environment)",
+      "Typhoid (soil), brucellosis (human), tetanus (animal)",
+      "All three diseases share the same reservoir",
+      "None of these have identifiable reservoirs"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why are beta-lactam antibiotics (penicillins, cephalosporins, carbapenems) grouped together?",
+    "o": [
+      "They share a common structural feature (the beta-lactam ring)",
+      "They are all produced by the same fungal species",
+      "They are unrelated antibiotic classes grouped arbitrarily",
+      "They are all naturally occurring probiotics"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What does the lecture imply about zoonotic and environmental sources being \"exogenous\"?",
+    "o": [
+      "Exogenous sources are not limited to person-to-person transmission — animals and soil count too",
+      "Exogenous only means from another human",
+      "Zoonotic sources are actually endogenous",
+      "Environmental sources cannot cause exogenous infection"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which best describes the relationship between reservoir and source in general?",
+    "o": [
+      "A reservoir is where the agent naturally persists; a source is where a specific host actually acquired the infection",
+      "They are always the exact same entity",
+      "A source is always a living organism only",
+      "A reservoir only refers to hospitals"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which statement about Corynebacterium glutamicum's industrial role is correct?",
+    "o": [
+      "It is engineered/cultured to produce amino acids on a multi-ton industrial scale",
+      "It is used only for antibiotic production",
+      "It is a pathogen with no industrial use",
+      "It causes food spoilage during fermentation"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What links Ehrlich's chemotherapy and Fleming's penicillin historically?",
+    "o": [
+      "Both represent early roots of modern antimicrobial treatment (synthetic and natural)",
+      "Both are the same discovery made independently",
+      "Neither relates to treating infection",
+      "Ehrlich discovered penicillin, not Fleming"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which of the following correctly distinguishes reservoir types for tetanus versus typhoid?",
+    "o": [
+      "Tetanus — environmental (soil) reservoir; Typhoid — human reservoir (carrier/patient)",
+      "Tetanus — human reservoir; Typhoid — environmental reservoir",
+      "Both have identical reservoirs",
+      "Neither has an identifiable reservoir"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why does the lecture separate portals of entry into so many distinct categories (mouth, nose, skin, blood, etc.)?",
+    "o": [
+      "Because different pathogens require access to different specific tissues to establish infection",
+      "Because all portals are functionally identical",
+      "Because only one portal type actually exists in nature",
+      "Because portals are unrelated to how pathogens cause disease"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What is the significance of describing malnutrition as increasing susceptibility to infection?",
+    "o": [
+      "It shows host nutritional status affects nonspecific immune defenses",
+      "It shows malnutrition directly kills pathogens",
+      "It shows malnutrition has no link to the immune system",
+      "It shows malnutrition only affects genetic susceptibility"
+    ],
+    "c": 0
+  }
+],
+  hard: [
+  {
+    "q": "A patient with no new external exposure develops diarrhea after three weeks of broad-spectrum antibiotics. Based on the source/endogenous framework, the most likely explanation is:",
+    "o": [
+      "Normal flora imbalance allowing a resident organism (e.g. E. coli) to overgrow",
+      "A new exogenous zoonotic infection",
+      "Placental transmission from a prior pregnancy",
+      "A biological-vector-borne infection acquired recently"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Comparing Pasteur's and Koch's scientific methods, which best characterizes the distinction?",
+    "o": [
+      "Pasteur used experimental disproof of a false theory; Koch built a stepwise positive causal framework (postulates)",
+      "Both used identical postulate-based reasoning",
+      "Koch disproved spontaneous generation; Pasteur wrote the postulates",
+      "Neither used the scientific method"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why can sickle cell trait be protective against Plasmodium falciparum specifically, but this does NOT imply general immunity to malaria as a disease category?",
+    "o": [
+      "Genetic resistance can be pathogen-specific to how that species invades red cells, not a broad immune mechanism",
+      "Sickle cell trait boosts antibody production against all parasites",
+      "Sickle cell trait is a form of acquired specific immunity",
+      "Malaria has only one causative species, making this distinction irrelevant"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which best explains why the reservoir and immediate source of Clostridium botulinum poisoning can differ?",
+    "o": [
+      "The organism's long-term natural habitat (soil) is distinct from the specific contaminated object (canned food) that transmits it to a given host",
+      "Soil and canned food are functionally identical reservoirs",
+      "Botulinum has no defined reservoir",
+      "Canned food is the only reservoir; soil is irrelevant"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Malaria (mosquito) and fly-borne Shigella both involve insects, but are classified differently because:",
+    "o": [
+      "Malaria's parasite develops through life-cycle stages inside the mosquito (biological vector); Shigella is merely carried externally by the fly (mechanical vector)",
+      "Both are biological vectors by definition",
+      "Both are mechanical vectors by definition",
+      "Insects can never be vectors for bacteria"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Placental/colostral transmission groups AIDS, brucellosis, and toxoplasmosis together despite involving a virus, a bacterium, and a protozoan. This grouping is based on:",
+    "o": [
+      "Shared transmission ROUTE (mother-to-offspring), not organism taxonomy",
+      "Shared organism classification",
+      "Shared treatment protocol",
+      "Shared portal of exit only, unrelated to entry"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why is intact skin NOT considered a portal of entry, even though pathogens can touch it?",
+    "o": [
+      "Intact skin functions as a nonspecific immune barrier, blocking access to susceptible tissue underneath",
+      "Intact skin actively produces antibodies against all pathogens",
+      "Portals of entry are defined only by depth, not integrity",
+      "Skin contact is never associated with any pathogen"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Comparing tetanus (soil reservoir) and typhoid (human carrier reservoir), both exogenous, the key practical implication for prevention is:",
+    "o": [
+      "Different reservoir types require different control strategies — wound care/immunization vs. carrier identification/sanitation",
+      "Both require identical hospital isolation protocols",
+      "Neither requires any specific prevention strategy",
+      "Soil reservoirs cannot be controlled, so prevention is irrelevant for tetanus"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why does the lecture conceptually separate \"nonspecific factors\" from \"specific immunity\" rather than treating host defense as one category?",
+    "o": [
+      "They differ in mechanism and timeline — innate defenses act immediately and broadly, while specific immunity is acquired, targeted, and often delayed",
+      "They are functionally identical and the separation is arbitrary",
+      "Nonspecific immunity only applies to bacteria; specific immunity only to viruses",
+      "Specific immunity always develops before nonspecific immunity"
+    ],
+    "c": 0
+  },
+  {
+    "q": "How does malnutrition fit into the chain of infection model?",
+    "o": [
+      "It acts at the Susceptible Host link by weakening nonspecific immune defenses, not by altering the agent or transmission route",
+      "It changes the portal of entry used by the pathogen",
+      "It converts an exogenous source into an endogenous one",
+      "It has no defined place within the chain of infection model"
+    ],
+    "c": 0
+  },
+  {
+    "q": "How do Hershey & Chase's 1952 findings connect historically to modern biotechnological benefits like Taq polymerase and cloning?",
+    "o": [
+      "Proving DNA is the genetic material provided the foundation for later DNA-based tools (PCR, cloning, engineered bacteria)",
+      "Their discovery is unrelated to any later biotechnological application",
+      "They directly discovered Taq polymerase themselves",
+      "Their work disproved the use of DNA in biotechnology"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Hepatitis B and HIV are grouped under the same portal of entry (blood) in the lecture despite very different disease courses. This grouping reflects:",
+    "o": [
+      "Classification by transmission mechanism/route, not by clinical severity or viral family",
+      "Classification strictly by how deadly each disease is",
+      "Classification by which organ each virus infects",
+      "There is no meaningful basis for this grouping"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What is the conceptual distinction between \"reservoir\" and \"source\" as used across the lecture's examples?",
+    "o": [
+      "Reservoir = long-term natural habitat where the agent persists; Source = the immediate origin from which a specific host acquired infection",
+      "They are always exactly the same entity in every example",
+      "Source refers only to human patients; reservoir refers only to animals",
+      "Reservoir only applies to soil-based organisms"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why is the chain of infection considered a useful model for designing control/prevention strategies?",
+    "o": [
+      "Each of its 6 links is an independent point where intervention can break the chain",
+      "It only allows intervention at the susceptible host link",
+      "It cannot be used for any practical prevention purpose",
+      "Only the reservoir link can ever be targeted for control"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which best explains why Ivanovski's TMV discovery mattered beyond virology itself?",
+    "o": [
+      "It proved pathogens smaller and structurally different from bacteria exist, expanding the definition of \"infectious agent\"",
+      "It disproved that any non-bacterial pathogens exist",
+      "It proved that all diseases are caused by fungi",
+      "It had no lasting scientific significance"
+    ],
+    "c": 0
+  },
+  {
+    "q": "A newborn acquires toxoplasmosis from its mother via the placenta. In chain-of-infection terms, what unusual overlap occurs here?",
+    "o": [
+      "The mother functions simultaneously as both reservoir and portal of entry for the infant",
+      "The placenta functions as the infectious agent itself",
+      "There is no reservoir involved in placental transmission",
+      "The infant is classified as the reservoir, not the mother"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Comparing direct inoculation (MRSA via scratch) to biological vector transmission (malaria), which statement about infectious requirements is most accurate?",
+    "o": [
+      "Direct inoculation delivers the pathogen straight to tissue with no vector development step; biological vector transmission requires the pathogen to complete part of its life cycle in the vector first",
+      "Both require an identical developmental delay before infection is possible",
+      "Direct inoculation always requires a vector; biological transmission never does",
+      "There is no meaningful difference between these transmission types"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why does the lecture's scope of medical microbiology list \"virulence factors\" separately from \"pathogenicity\"?",
+    "o": [
+      "Pathogenicity is the general capacity to cause disease; virulence factors are the specific mechanisms (toxins, enzymes, adhesins) determining severity",
+      "They are identical terms used interchangeably with no distinction",
+      "Virulence factors refer only to vaccines",
+      "Pathogenicity refers only to viral infections"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which statement best reflects why vaccination is listed as part of medical microbiology's scope only conditionally (\"if found\")?",
+    "o": [
+      "Not every pathogen has an available vaccine, making it a conditional rather than universal tool",
+      "Vaccination is always available for every pathogen without exception",
+      "Vaccination is unrelated to medical microbiology",
+      "Vaccination replaces the need for diagnosis in every case"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What is the underlying rationale for grouping penicillins, cephalosporins, and carbapenems as \"beta-lactam antibacterials\"?",
+    "o": [
+      "They share a common structural feature (the beta-lactam ring) despite being produced/derived differently",
+      "They are all produced exclusively by Penicillium species",
+      "They are unrelated drug classes grouped by coincidence",
+      "They are all classified as probiotics rather than antibiotics"
+    ],
+    "c": 0
+  },
+  {
+    "q": "How does the biological-vector mechanism of malaria transmission explain why mosquito control is an effective public-health strategy against it?",
+    "o": [
+      "Since the parasite must complete a developmental stage inside the mosquito before becoming infectious, eliminating the vector interrupts the pathogen's life cycle, not just its transport",
+      "Mosquitoes have no biological role in malaria transmission, so control would be ineffective",
+      "The parasite is transmitted purely mechanically, so vector control has no life-cycle impact",
+      "Malaria is transmitted only via ingestion, making mosquito control irrelevant"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why might identifying a \"carrier\" (as in typhoid/Salmonella typhi) be epidemiologically more challenging than identifying a symptomatic patient?",
+    "o": [
+      "A carrier sheds the organism without visible symptoms, acting as a hidden ongoing reservoir that is harder to detect and isolate",
+      "Carriers are always more contagious than symptomatic patients",
+      "Carriers cannot transmit disease at all",
+      "Symptomatic patients are never infectious"
+    ],
+    "c": 0
+  },
+  {
+    "q": "How does the lecture's structure imply a relationship between Koch's postulates and the modern requirement to study \"characteristics of pathogenic microbes\" first in medical microbiology?",
+    "o": [
+      "Koch's postulates require characterizing the causative organism before confirming disease causation — the historical ancestor of studying organism traits before transmission or treatment",
+      "Koch's postulates are unrelated to organism characterization",
+      "Koch's postulates focus only on treatment, not characterization",
+      "Modern medical microbiology no longer uses Koch's logic at all"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which best explains why brucellosis can appear under both \"exogenous source\" (zoonosis) and \"placental/colostral transmission\" categories without contradiction?",
+    "o": [
+      "These categories classify different aspects — overall origin relative to the human body versus the specific human-to-human transmission route in a given case",
+      "This represents a contradiction in the lecture that cannot be resolved",
+      "Brucellosis can only ever be exogenous, never transmitted placentally",
+      "Placental transmission always overrides exogenous classification"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Comparing sickle cell trait (genetic) and maternally-transferred antibodies (specific immunity), what is the fundamental mechanistic difference?",
+    "o": [
+      "Sickle cell protection is a fixed inherited structural trait; antibody transfer is an acquired, targeted molecular defense against a specific microbe",
+      "Both are structurally identical forms of protection",
+      "Sickle cell trait is acquired after birth through vaccination",
+      "Antibody transfer is a permanent genetic modification"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why is \"age\" grouped with immune deficiency, diabetes, burns, and surgery as susceptible-host factors despite not being a disease?",
+    "o": [
+      "All these factors share the underlying mechanism of compromising host immune defenses (age extremes are linked to immature or declining immunity)",
+      "Age has no relationship to immune function according to the lecture",
+      "Age is classified as an infectious agent, not a host factor",
+      "Age only matters for genetic susceptibility, not immune function"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What does the requirement that a portal of entry provide access to \"target tissue where the pathogen can attach, multiply, or toxins can act\" rule out?",
+    "o": [
+      "Simple superficial contact with an intact barrier (like unbroken skin) that does not grant access to susceptible tissue",
+      "All forms of respiratory transmission",
+      "All forms of ingestion-based transmission",
+      "Any transmission that does not involve a vector"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Considering both historical (Ehrlich) and mechanistic (mucous membrane adhesion) descriptions of syphilis in the lecture, what does this illustrate about the lecture's structure?",
+    "o": [
+      "The same disease can be discussed both as a historical treatment landmark and later as a model example of a specific transmission mechanism",
+      "Ehrlich's chemotherapy work and the portal-of-entry description are entirely unrelated and coincidental",
+      "Syphilis is only relevant to the history section, not transmission",
+      "The lecture treats history and transmission as mutually exclusive topics"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why would classifying a pathogen's \"mode of transmission\" as fixed per organism (rather than per transmission event) be an oversimplification, based on the lecture's fecal-oral and respiratory examples?",
+    "o": [
+      "The same organism can spread via different modes (e.g. droplets vs. ingestion) depending on which specific portal of exit/entry is involved in a given case",
+      "Every pathogen only ever uses exactly one mode of transmission with no exceptions",
+      "Mode of transmission is entirely unrelated to portals of exit or entry",
+      "Only viruses can have more than one mode of transmission"
+    ],
+    "c": 0
+  },
+  {
+    "q": "How does the lecture's emphasis on reservoirs including \"the environment\" (not just living hosts) affect disease control logic for agents like Clostridium tetani?",
+    "o": [
+      "Since the organism persists independently in soil, eliminating infected humans/animals alone cannot eradicate the reservoir — prevention must target exposure (e.g. wound care, immunization) rather than reservoir elimination",
+      "Environmental reservoirs can always be fully eliminated through antibiotics",
+      "Soil-based reservoirs behave identically to human reservoirs for control purposes",
+      "Environmental reservoirs are irrelevant to public health strategy"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which statement best integrates the roles of Ehrlich and Fleming in the historical development of infection treatment?",
+    "o": [
+      "Ehrlich founded synthetic chemotherapy; Fleming discovered a naturally-derived antibiotic — together establishing the two major roots of antimicrobial therapy",
+      "Ehrlich and Fleming made the exact same discovery independently",
+      "Fleming founded chemotherapy; Ehrlich discovered penicillin",
+      "Neither contributed to antimicrobial treatment development"
+    ],
+    "c": 0
+  },
+  {
+    "q": "In distinguishing genetic, nonspecific, and specific susceptibility factors, which ordering best reflects increasing pathogen-specificity?",
+    "o": [
+      "Nonspecific immunity (broadest) → genetic factors (pathogen-specific trait) → specific immunity (most targeted, antibody-based)",
+      "Specific immunity (broadest) → nonspecific → genetic (most targeted)",
+      "All three factors have identical specificity",
+      "Genetic factors are always broader than nonspecific immunity"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why can a single zoonotic disease like brucellosis simultaneously involve an animal reservoir AND a described placental transmission route to a human fetus?",
+    "o": [
+      "The original exogenous animal-to-human transmission and a SEPARATE subsequent human-to-human (placental) transmission event are distinct steps that can both occur for the same organism",
+      "A disease can only ever have one reservoir and one transmission route throughout its entire course",
+      "Animal reservoirs eliminate the possibility of any further human-to-human transmission",
+      "Placental transmission always excludes zoonotic origin"
+    ],
+    "c": 0
+  },
+  {
+    "q": "What is the significance of describing Corynebacterium glutamicum's amino acid output in tons per year rather than just naming the amino acids?",
+    "o": [
+      "It emphasizes the industrial/economic scale of microbiological biotechnology beyond basic science, showing real-world application magnitude",
+      "The tonnage figure is irrelevant scientific decoration with no purpose",
+      "It proves the bacterium is pathogenic at high production volumes",
+      "It shows amino acid production has no industrial relevance"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Considering the definitions given, which best explains why a catheter is treated as functionally similar to \"broken skin\" as a portal of entry?",
+    "o": [
+      "Both create an artificial breach that bypasses the intact-skin barrier, giving pathogens direct tissue access",
+      "A catheter and broken skin are entirely unrelated portal types with no shared mechanism",
+      "Catheters only ever cause airborne infections",
+      "Broken skin cannot serve as a portal of entry in the lecture's framework"
+    ],
+    "c": 0
+  },
+  {
+    "q": "How would the chain of infection framework classify a case where a person's own antibiotic-disrupted flora causes disease, in terms of the Reservoir and Portal of Exit links?",
+    "o": [
+      "These links are effectively collapsed/bypassed since the agent and host are the same individual, unlike classic exogenous transmission requiring a separate reservoir and exit step",
+      "The reservoir must always be an external soil source in every case",
+      "Portal of exit is always respiratory regardless of infection type",
+      "Endogenous infections require an animal reservoir by definition"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why does distinguishing \"biological\" from \"mechanical\" vectors matter for choosing a public health intervention strategy?",
+    "o": [
+      "Biological vector control (e.g. mosquito control) interrupts the pathogen's required life cycle, while mechanical vector control (e.g. sanitation, pest control) simply removes a carrier without affecting the pathogen's biology directly",
+      "Both vector types require identical intervention strategies",
+      "Mechanical vectors cannot be controlled through sanitation",
+      "Biological vectors never respond to any public health intervention"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Which best summarizes why the lecture treats \"virulence factors,\" \"pathogenicity,\" and \"immune system response\" as three distinct items within medical microbiology's scope rather than one combined topic?",
+    "o": [
+      "Each addresses a different actor in the agent-host interaction: virulence factors (agent's tools), pathogenicity (agent's general capacity), and immune response (host's reaction) — together forming the full picture",
+      "All three terms are fully synonymous and redundant",
+      "Only immune response is relevant to medical microbiology",
+      "Virulence factors and pathogenicity apply only to non-infectious diseases"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Based on the full scope of medical microbiology described in the lecture, which sequence best reflects the logical progression from understanding a pathogen to controlling it?",
+    "o": [
+      "Characteristics → transmission/portals → virulence/pathogenicity → immune response/symptoms → diagnosis/lab tests → treatment → prevention/vaccination",
+      "Treatment → diagnosis → characteristics → prevention → transmission",
+      "Vaccination → symptoms → characteristics → treatment → diagnosis",
+      "Prevention → treatment → diagnosis → characteristics → transmission"
+    ],
+    "c": 0
+  },
+  {
+    "q": "Why is it significant that the lecture describes reservoirs as capable of being humans, animals, OR the environment, rather than defining a single universal reservoir type for all pathogens?",
+    "o": [
+      "It reflects that different pathogens have fundamentally different ecological niches, requiring tailored surveillance and control strategies per reservoir type",
+      "All pathogens actually share one universal reservoir type in practice",
+      "Only human reservoirs are epidemiologically significant",
+      "Environmental and animal reservoirs behave identically to human reservoirs for every control purpose"
+    ],
+    "c": 0
+  }
+]
+};
 
 function shuffle(arr){
   const a = arr.slice();
@@ -817,20 +2920,22 @@ function shuffle(arr){
 }
 
 let score = 0, answered = 0;
+let currentQuizLevel = 'easy';
 const quizList = document.getElementById('quizList');
 
 function buildQuiz(){
+  const activeSet = quizRaw[currentQuizLevel];
   quizList.innerHTML = '';
   score = 0; answered = 0;
   updateScore();
-  quizRaw.forEach((item, qi)=>{
+  activeSet.forEach((item, qi)=>{
     const optsWithFlag = item.o.map((text,i)=>({text, correct:i===item.c}));
     const shuffled = shuffle(optsWithFlag);
 
     const box = document.createElement('div');
     box.className = 'quiz-item';
     box.innerHTML = `
-      <div class="qn">QUESTION ${qi+1} / ${quizRaw.length}</div>
+      <div class="qn">QUESTION ${qi+1} / ${activeSet.length}</div>
       <div class="qtext">${item.q}</div>
       <div class="quiz-options"></div>
     `;
@@ -857,9 +2962,17 @@ function buildQuiz(){
   });
 }
 function updateScore(){
-  document.getElementById('quizScore').textContent = `Score: ${score} / ${quizRaw.length}`;
+  document.getElementById('quizScore').textContent = `Score: ${score} / ${quizRaw[currentQuizLevel].length}`;
 }
 document.getElementById('quizReset').addEventListener('click', buildQuiz);
+document.querySelectorAll('#quizLevelTabs .level-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('#quizLevelTabs .level-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    currentQuizLevel = btn.dataset.level;
+    buildQuiz();
+  });
+});
 buildQuiz();
 </script>
 </body>
